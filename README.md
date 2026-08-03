@@ -24,6 +24,15 @@ Join the public [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1) for setup
 discussion and release feedback. Never post Kiro credentials, API tokens,
 provider files, or Claude session logs.
 
+## Documentation map
+
+- [Why this fork exists](#why-this-fork-exists) and [comparison](#comparison)
+- [ClawGod capabilities](#clawgod-capabilities-included) and [prompt behavior](#prompt-behavior)
+- [Installation, verification, update, and uninstall](#installation-and-lifecycle)
+- [Features](#features), [gateway-only installation](#gateway-only-installation), and [usage](#usage)
+- [Endpoints](#endpoints), [architecture](#architecture), and feature deep dives
+- [Known limitations](#known-limitations), [troubleshooting](#troubleshooting), [security](#security-and-data-handling), and [validation status](#testing-and-validation-status)
+
 ## Why this fork exists
 
 Claude Code sends its built-in WebSearch as the Anthropic server tool
@@ -119,14 +128,17 @@ original, auditable [`config/CLAUDE.md`](config/CLAUDE.md) after the built-in
 instructions to describe WebSearch routing, source-link expectations, update
 isolation, credential hygiene, and verification rules.
 
-## Quick start
+## Installation and lifecycle
 
-Prerequisites:
+### Prerequisites
 
 - macOS or Linux
-- Go 1.26+, Node.js 18+, Bun, ripgrep, and Kiro CLI
-- Kiro CLI logged in
+- Go 1.26+, Node.js 18+, Bun, curl, and ripgrep
+- Kiro CLI installed and logged in, or a Kiro API key and region
 - an official Claude Code installation (used locally; never copied into this repository)
+- `~/.local/bin` on `PATH`
+
+### Install the complete profile
 
 ```bash
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -135,33 +147,95 @@ cd clawgod-kirocc
 claude-kiro
 ```
 
-The installer pins ClawGod v1.7.5, verifies its installer SHA-256, gives the
-downloaded installer local-only path overrides, and creates all generated files
-under `~/.clawgod-kirocc` and `~/.local/share/clawgod-kirocc`. It never writes
-the `claude` command. Rerun with `--refresh-clawgod` to refresh the isolated
-runtime through the same checks.
+The installer builds the patched gateway, downloads the pinned ClawGod v1.7.5
+installer over HTTPS, verifies SHA-256
+`4a943439ae8cb858e69279d19f0d3a979968fc0a9e4c42e1d1018ae76657ce82`,
+applies temporary isolation-path overrides, and generates the runtime locally.
+It never creates, replaces, or deletes the official `claude` command.
 
-To use an already isolated ClawGod executable without downloading another copy:
+### Installed layout
+
+| Path | Purpose |
+| --- | --- |
+| `~/.local/bin/claude-kiro` | Explicit launcher; starts/reuses the gateway and then runs isolated ClawGod |
+| `~/.local/share/clawgod-kirocc/bin/kirocc-native-websearch` | Patched Go gateway |
+| `~/.local/share/clawgod-kirocc/clawgod/` | Isolated ClawGod launchers and local runtime references |
+| `~/.clawgod-kirocc/` | Generated ClawGod runtime, vendor files, and isolated state |
+| `~/.clawgod-kirocc/claude-config/` | Isolated Claude settings, sessions, projects, and additive `CLAUDE.md` |
+| `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-3457.log` | Launcher-managed gateway startup log for the default port |
+
+The default launcher port is `3457`; standalone `kirocc` defaults to `3456`.
+If a healthy gateway already answers at `KIROCC_URL`, the launcher reuses it.
+Otherwise it starts one for the lifetime of the `claude-kiro` process and stops
+that child gateway on exit.
+
+### Verify the installation
+
+```bash
+command -v claude
+command -v claude-kiro
+claude --version
+claude-kiro --version
+```
+
+The first two paths must be different. The official command should retain its
+normal branding; `claude-kiro` should show ClawGod's green patched branding when
+run interactively. A version command can exit before there is time to inspect
+the managed health endpoint, so check `http://127.0.0.1:3457/health` only while
+an interactive `claude-kiro` session is open.
+
+### Installer options and overrides
+
+```text
+./scripts/install.sh [--refresh-clawgod] [--gateway-only]
+```
+
+| Option or variable | Purpose |
+| --- | --- |
+| `--refresh-clawgod` | Rebuild the isolated ClawGod runtime with the same checksum and path checks |
+| `--gateway-only` | Build the gateway and launcher around an explicit `CLAWGOD_BIN` |
+| `CLAWGOD_BIN` | Existing explicit ClawGod launcher used by gateway-only mode |
+| `CLAWGOD_RELEASE` | ClawGod release tag; defaults to `v1.7.5` |
+| `CLAWGOD_INSTALLER_SHA256` | Required expected checksum when changing the release tag |
+| `CLAWGOD_KIROCC_INSTALL_ROOT` | Runtime root; defaults to `~/.local/share/clawgod-kirocc` |
+| `CLAWGOD_KIROCC_STATE_ROOT` | State root; defaults to `~/.clawgod-kirocc` |
+| `CLAWGOD_KIROCC_BIN_DIR` | Launcher directory; defaults to `~/.local/bin` |
+| `KIROCC_PORT` | Managed gateway port; defaults to `3457` |
+
+Example using an existing isolated ClawGod executable:
 
 ```bash
 CLAWGOD_BIN=/absolute/path/to/clawgod ./scripts/install.sh --gateway-only
 ```
 
-Uninstall the runtime while preserving its state:
+### Update and uninstall
+
+`claude-kiro update` is intentionally blocked because upstream self-update
+would escape the checksum and isolation boundary. Update through this repository:
+
+```bash
+git pull --ff-only
+./scripts/install.sh --refresh-clawgod
+```
+
+Remove binaries while preserving the isolated state:
 
 ```bash
 ./scripts/uninstall.sh
 ```
 
-Add `--purge-state` only when you also want to delete the isolated ClawGod
-configuration and session state.
+Delete the isolated configuration, projects, and session state as well:
+
+```bash
+./scripts/uninstall.sh --purge-state
+```
 
 ## Features
 
 - **Anthropic Messages API compatible** — Supports `/v1/messages` (streaming / non-streaming), `/v1/messages/count_tokens`, and `/v1/models`
 - **Request conversion** — Automatically converts Anthropic API requests to Kiro API (AWS Event Stream) format
 - **Response conversion** — Converts Kiro event streams back to Anthropic SSE format
-- **Automatic auth management** — Reads credentials from Kiro CLI's SQLite DB with automatic token refresh (Social / OIDC)
+- **Automatic auth management** — Reads and refreshes Kiro CLI SQLite credentials (Social/OIDC), or uses an explicit Kiro API key and region
 - **Model mapping** — Maps Anthropic model names (e.g., `claude-sonnet-4-6`) to Kiro model names. Customizable via environment variable
 - **Extended Thinking** — Enable via the `[1m]` suffix, the `thinking` field, or `output_config.effort`. Reasoning depth travels natively as `additionalModelRequestFields.output_config.effort` (validated against each model's enum; defaults to `medium` for effort-capable models when thinking is on without an explicit effort)
 - **Tool Search** — Proxy-side implementation of Anthropic's [Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool). Supports `tool_search_tool_regex_20251119` and `tool_search_tool_bm25_20251119` with `defer_loading` for on-demand tool discovery
@@ -170,19 +244,19 @@ configuration and session state.
 - **Prompt Caching** — Converts Anthropic tool-level `cache_control` to Kiro `cachePoint`
 - **Truncation detection** — Automatically injects a notice into the next request when a response is truncated
 - **Retry** — Exponential backoff retry for 403 (token expiry), 429, and 5xx errors. Also retries thinking-only (empty visible) responses
+- **SSE keep-alive** — Sends an idle comment heartbeat every 15 seconds by default; configurable or disableable
 - **API key auth** — Optional access restriction for the proxy itself
 - **CORS** — Allows requests from localhost origins
 - **File logging** — Write structured logs (OTel JSON Lines) to a rotating file via [lumberjack](https://github.com/natefinch/lumberjack). Defaults optimized for coding agent consumption (10 MB, uncompressed)
 - **OpenTelemetry tracing** — Opt-in distributed tracing via `--otel` with OTLP HTTP exporter. Captures request/response headers and body as span events across the full proxy chain
 
-## Prerequisites
-
-- Go 1.26+
-- [Kiro CLI](https://kiro.dev) installed and logged in
-
 ## Gateway-only installation
 
-### Build the gateway only
+Use this path when you want the Anthropic-compatible gateway without the
+isolated ClawGod profile. It requires Go 1.26+ and either a logged-in
+[Kiro CLI](https://kiro.dev) or a Kiro API key.
+
+### Build the standalone gateway
 
 ```bash
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -196,10 +270,33 @@ binaries instead of `go install` from the fork URL.
 
 ## Usage
 
-### Start the server
+### Isolated `claude-kiro` launcher
+
+Normal use needs only:
 
 ```bash
-kirocc
+claude-kiro
+```
+
+The launcher sets the isolated `CLAUDE_CONFIG_DIR`, points
+`ANTHROPIC_BASE_URL` at the gateway, clears conflicting Anthropic/Bedrock/
+Vertex/Foundry provider variables, and forwards every argument to ClawGod.
+
+Runtime overrides:
+
+| Variable | Purpose |
+| --- | --- |
+| `KIROCC_BIN` | Alternate patched gateway executable |
+| `CLAWGOD_BIN` | Alternate explicit ClawGod executable |
+| `CLAWGOD_KIROCC_CONFIG_DIR` | Alternate isolated Claude configuration directory |
+| `KIROCC_PORT` | Port used when the launcher starts its own gateway |
+| `KIROCC_URL` | Reuse an existing gateway URL instead of the default `http://127.0.0.1:$KIROCC_PORT` |
+| `KIROCC_API_KEY` | Protect the gateway and use the same value as Claude's local proxy token |
+
+### Start the standalone gateway
+
+```bash
+./dist/kirocc
 ```
 
 Listens on `http://127.0.0.1:3456` by default.
@@ -214,6 +311,20 @@ claude
 
 `ANTHROPIC_AUTH_TOKEN` is required by Claude Code but not used for authentication by kirocc (credentials are read from Kiro CLI's DB). Any non-empty value works unless `-api-key` is set.
 
+### Kiro authentication modes
+
+The gateway supports two mutually exclusive upstream credential sources:
+
+1. **Kiro CLI database (default):** reads the OS-specific SQLite database and
+   refreshes Social/OIDC credentials automatically.
+2. **Kiro API key:** set `KIRO_API_KEY=ksk_...` and optionally
+   `KIRO_API_REGION` (default `us-east-1`), or pass `-kiro-api-key` and
+   `-kiro-api-region`. This bypasses the local Kiro CLI database, not Kiro's
+   server-side authorization or quota checks.
+
+`KIROCC_API_KEY` is different: it protects access to the **local proxy**. It is
+not a Kiro credential.
+
 ### Command-line options
 
 | Flag               | Default                   | Description                                                        |
@@ -222,7 +333,10 @@ claude
 | `-host`            | `127.0.0.1`               | Bind host                                                          |
 | `-db`              | (OS-dependent, see below) | Kiro CLI SQLite DB path                                            |
 | `-api-key`         | (none)                    | API key required to access the proxy                               |
+| `-kiro-api-key`    | (none)                    | Kiro `ksk_...` key instead of the Kiro CLI database credential     |
+| `-kiro-api-region` | `us-east-1`               | Region used with Kiro API-key authentication                       |
 | `-debug`           | `false`                   | Enable debug logging                                               |
+| `-keepalive-interval` | `15s`                  | SSE idle keep-alive interval; `0` disables it                      |
 | `-log-file`        | (none)                    | Write logs to file with rotation (file-only by default)            |
 | `-log-max-size`    | `10`                      | Max log file size in MB before rotation                            |
 | `-log-max-backups` | `5`                       | Max number of old log files to retain                              |
@@ -249,7 +363,10 @@ Command-line options can be overridden with environment variables.
 | `KIROCC_HOST`            | `-host`              |
 | `KIROCC_DB_PATH`         | `-db`                |
 | `KIROCC_API_KEY`         | `-api-key`           |
+| `KIRO_API_KEY`           | `-kiro-api-key`      |
+| `KIRO_API_REGION`        | `-kiro-api-region`   |
 | `KIROCC_DEBUG`           | `-debug`             |
+| `KIROCC_KEEPALIVE_INTERVAL` | `-keepalive-interval` |
 | `KIROCC_LOG_FILE`        | `-log-file`          |
 | `KIROCC_LOG_MAX_SIZE`    | `-log-max-size`      |
 | `KIROCC_LOG_MAX_BACKUPS` | `-log-max-backups`   |
@@ -258,6 +375,7 @@ Command-line options can be overridden with environment variables.
 | `KIROCC_LOG_CONSOLE`     | `-log-console`       |
 | `KIROCC_OTEL`            | `-otel`              |
 | `KIROCC_OTEL_BODY_LIMIT` | `-otel-body-limit`   |
+| `KIROCC_MODEL_MAPPINGS`  | Custom model mapping JSON (no flag) |
 
 ### OpenTelemetry tracing
 
@@ -267,8 +385,8 @@ Enable distributed tracing to visualize the full request chain in Jaeger, Grafan
 # Start a local collector (e.g., Grafana LGTM stack)
 docker run -d --name lgtm -p 3000:3000 -p 4317:4317 -p 4318:4318 grafana/otel-lgtm
 
-# Start kirocc with tracing enabled
-kirocc -otel
+# Start the locally built gateway with tracing enabled
+./dist/kirocc -otel
 ```
 
 The OTLP endpoint defaults to `http://localhost:4318` and can be configured via the standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable.
@@ -300,11 +418,12 @@ flowchart TB
         CC["Claude Code / Anthropic API Client"]
     end
 
-    subgraph kirocc ["kirocc (localhost:3456)"]
+    subgraph kirocc ["kirocc (standalone :3456 / claude-kiro :3457)"]
         direction TB
         MW["Middleware<br/>(OTel Tracing, Trace ID, CORS, API Key Auth)"]
         Handler["Messages Handler"]
         Auth["Auth<br/>(SQLite + Token Refresh)"]
+        WebSearchRoute["Native WebSearch Router<br/>(Anthropic server tool ↔ Kiro MCP)"]
 
         subgraph reqconv ["Request Conversion"]
             direction LR
@@ -327,16 +446,21 @@ flowchart TB
         end
     end
 
-    subgraph Kiro ["Kiro API"]
+    subgraph Kiro ["Kiro services"]
         KiroAPI["runtime.{region}.kiro.dev"]
+        KiroSearch["q.{region}.amazonaws.com/mcp<br/>web_search"]
     end
 
     CC -- "Anthropic Messages API<br/>(JSON / SSE)" --> MW
     MW --> Handler
     Handler --> Auth
     Handler --> reqconv
+    Handler --> WebSearchRoute
     reqconv -- "Kiro Payload<br/>(JSON)" --> KiroAPI
     KiroAPI -- "AWS Event Stream<br/>(binary frames)" --> respconv
+    WebSearchRoute -- "JSON-RPC tools/call" --> KiroSearch
+    KiroSearch -- "Search results" --> WebSearchRoute
+    WebSearchRoute -- "server_tool_use + result<br/>(JSON / SSE)" --> CC
     respconv -- "Anthropic SSE / JSON" --> CC
 ```
 
@@ -346,7 +470,12 @@ flowchart TB
 2. Middleware assigns a trace ID, handles CORS, and validates the API key
 3. Auth reads/refreshes credentials from Kiro CLI's SQLite DB
 4. Handler resolves the model name and determines thinking mode
-5. Request conversion pipeline:
+5. A request containing only Anthropic's native `web_search_20250305` server
+   tool takes the Kiro MCP path: the handler extracts the query, calls
+   `tools/call`, and writes paired `server_tool_use` and
+   `web_search_tool_result` blocks as JSON or SSE. It never reaches the Kiro
+   inference endpoint.
+6. All other requests use the inference conversion pipeline:
    - Normalizes messages (merges consecutive same-role messages, extracts text/images/tool_use/tool_result from multi-block content)
    - Converts tools and sanitizes JSON Schema (removes unsupported keywords, flattens `anyOf`/`oneOf`/`allOf`)
    - If tool search tools are present, partitions tools into active/deferred and injects a proxy-side `ToolSearch` tool
@@ -355,8 +484,8 @@ flowchart TB
    - Reorders tool results to match the preceding assistant's tool_use order
    - Forwards reasoning effort natively as `additionalModelRequestFields.output_config.effort` at the request root (sibling of `conversationState`); the resolved effort is validated/clamped per model
    - Converts Anthropic tool-level `cache_control` to Kiro `cachePoint`
-6. Kiro API returns an AWS Event Stream (binary frames)
-7. Response conversion pipeline:
+7. Kiro API returns an AWS Event Stream (binary frames)
+8. Response conversion pipeline:
    - Parses binary event stream frames
    - Converts cumulative text to incremental deltas
    - Intercepts `ToolSearch` tool_use calls, executes search, emits `server_tool_use`/`tool_search_tool_result` SSE events, and re-requests Kiro with discovered tools (up to 3 rounds)
@@ -364,6 +493,26 @@ flowchart TB
    - Enforces `stop_sequences` and `max_tokens` adapter-side
    - Detects truncated responses and stores them; a notice is injected into the next request
    - Gate Writer buffers output until visible content arrives, enabling transparent retry of thinking-only responses
+
+### Native WebSearch
+
+The supported Claude Code contract is a request whose `tools` array contains
+exactly one `web_search_20250305` server tool. The gateway:
+
+1. extracts Claude Code's search query from the final user message;
+2. calls Kiro's regional MCP endpoint with JSON-RPC `tools/call` and
+   `name: web_search`;
+3. refreshes credentials on 403 and retries 429/5xx responses with backoff;
+4. returns the same `tool_use_id` in `server_tool_use` and
+   `web_search_tool_result`;
+5. supports non-streaming JSON, ordered SSE events, token counting, and
+   `usage.server_tool_use.web_search_requests`.
+
+Deliberate current boundary: a hand-written request that combines native
+WebSearch with another client tool returns HTTP 400. Claude Code's observed
+built-in WebSearch subrequest uses the supported single-server-tool form.
+Search availability, ranking, result freshness, and subscription enforcement
+remain upstream Kiro behavior.
 
 ### Extended Thinking
 
@@ -450,6 +599,88 @@ When the proxy routes to a **1M context window** (always-1M SKU such as `claude-
 
 Note: `[1m]` has different meanings on request vs. response. On the **request** `model` it is a client-supplied thinking-opt-in signal (and is stripped before upstream routing). On the **response** `model` it is purely a context-window advertisement for Claude Code and does not imply that extended thinking was enabled.
 
+## Known limitations
+
+- The complete isolated ClawGod installer targets macOS and Linux. A standalone
+  Go gateway build on another OS is not evidence that the full profile is
+  supported there.
+- A hand-written request that mixes native WebSearch with client tools returns
+  HTTP 400.
+- `count_tokens` is approximate and does not use Claude's official tokenizer.
+- Computer Use, Ultraplan, Ultrareview, and other unlocked entry points still
+  depend on the OS, native modules, remote services, and Kiro compatibility.
+- Kiro controls quota, model authorization, throttling, regional availability,
+  and search quality/freshness.
+- ClawGod in-place updates are disabled; refresh through this repository.
+- Automated tests validate contracts and error paths, not current upstream
+  service availability.
+
+## Troubleshooting
+
+| Symptom | Check or fix |
+| --- | --- |
+| `claude-kiro: command not found` | Add `~/.local/bin` to `PATH`, then rerun `command -v claude-kiro` |
+| Installer reports a missing prerequisite | Install the named command; the complete profile requires `go`, `curl`, `node`, `bun`, and `rg` |
+| `official Claude Code command not found` | Install official Claude Code and confirm `command -v claude` before rerunning the installer |
+| Gateway fails to start | Read `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`; choose another port with `KIROCC_PORT=3458` if needed |
+| Kiro returns 401/403 | Log in again with Kiro CLI, or verify `KIRO_API_KEY` and `KIRO_API_REGION`; do not substitute `KIROCC_API_KEY` |
+| WebSearch still reports the old schema 502 | Confirm `command -v claude-kiro`, rerun `./scripts/install.sh`, and verify the gateway binary is `kirocc-native-websearch` |
+| Native WebSearch returns HTTP 400 | Do not combine `web_search_20250305` with client tools in one hand-written request |
+| `claude-kiro update` is blocked | Expected; use `git pull --ff-only` followed by `./scripts/install.sh --refresh-clawgod` |
+| Patched UI is not green | Confirm you launched `claude-kiro`, not official `claude`; refresh the isolated runtime if the path is correct |
+| Skills, MCPs, or history appear missing | Expected isolation: selectively copy or recreate only the configuration you want under `~/.clawgod-kirocc/claude-config`; do not symlink the entire official profile |
+
+## Security and data handling
+
+- The launcher and standalone gateway bind to `127.0.0.1` by default. If you
+  bind to a non-loopback address, set a strong `KIROCC_API_KEY` and add network
+  access controls.
+- Kiro credentials remain in Kiro CLI's database or the process environment.
+  They are never intentionally copied into this repository.
+- Generated ClawGod files, extracted Claude Code content, provider files,
+  sessions, logs, and local databases are excluded from Git.
+- Debug logs and OpenTelemetry spans may contain request/response bodies. Store
+  and share them as secrets; reduce `-otel-body-limit` or disable capture when
+  handling sensitive code.
+- ClawGod removes selected local caution prompts. That does not grant authority
+  to access systems or perform destructive actions. Review tool calls and keep
+  backups.
+- Review [`SECURITY.md`](SECURITY.md) before reporting a vulnerability; never
+  include live credentials or session logs in an issue or the Telegram group.
+
+## Testing and validation status
+
+```bash
+make test
+GOEXPERIMENT=jsonv2 go vet ./...
+bash -n scripts/install.sh scripts/uninstall.sh
+python3 -m json.tool config/settings.json >/dev/null
+```
+
+`make test` runs `go test -race ./...`. CI repeats formatting/fix checks,
+integration-file validation, golangci-lint, and the race test suite.
+
+Verified snapshot on macOS arm64 (2026-08-03):
+
+- isolated installer completed with the official Claude binary path, binary
+  SHA-256, and official settings SHA-256 unchanged before/after;
+- `claude-kiro --version` ran through the isolated ClawGod launcher;
+- unit/contract tests covered Kiro MCP headers and JSON-RPC, 403 refresh,
+  429/5xx retry, non-streaming blocks, ordered SSE events, matching
+  `tool_use_id`, token count, and mixed-tool rejection;
+- the public GitHub CI passed for the published code.
+
+CI cannot prove current Kiro subscription availability, search ranking, remote
+ClawGod services, or provider-side feature authorization. Credentialed live E2E
+tests remain environment-dependent and should not be inferred from unit-test
+success.
+
 ## License
 
-Apache License 2.0
+- This repository and the kirocc-derived code: Apache-2.0.
+- Upstream [kirocc](https://github.com/d-kuro/kirocc): Apache-2.0.
+- [ClawGod](https://github.com/0Chencc/clawgod): GPL-3.0; downloaded and
+  generated locally, not redistributed by this repository.
+- Claude Code: proprietary Anthropic software and not included.
+
+See [`NOTICE`](NOTICE) for attribution and modification boundaries.
