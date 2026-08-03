@@ -1,5 +1,7 @@
 package messages
 
+// Modified by ClawGod KiroCC to count native WebSearch requests safely.
+
 import (
 	"bytes"
 	"context"
@@ -38,6 +40,11 @@ func (s *Service) HandleCountTokens(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ccSessionID := r.Header.Get(headerCCSessionID)
+	if hasNativeWebSearch(req) {
+		n := estimateWebSearchTokens(req)
+		httpx.WriteJSON(w, http.StatusOK, map[string]int{"input_tokens": n})
+		return
+	}
 
 	// Mirror the live send path so token counts include effort (envState is
 	// derived inside BuildPayload from the system prompt).

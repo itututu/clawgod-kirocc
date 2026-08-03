@@ -1,9 +1,12 @@
 package anthropic
 
+// Modified by ClawGod KiroCC to model Anthropic native WebSearch tools.
+
 import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"fmt"
+	"strings"
 )
 
 // Request represents an incoming Anthropic Messages API request.
@@ -174,6 +177,7 @@ type CacheControl struct {
 const (
 	ToolTypeSearchRegex = "tool_search_tool_regex_20251119"
 	ToolTypeSearchBM25  = "tool_search_tool_bm25_20251119"
+	ToolTypeWebSearch   = "web_search_"
 )
 
 // Content block type constants.
@@ -188,6 +192,8 @@ const (
 	BlockTypeToolReference          = "tool_reference"
 	BlockTypeToolSearchSearchResult = "tool_search_tool_search_result"
 	BlockTypeToolSearchResultError  = "tool_search_tool_result_error"
+	BlockTypeWebSearchToolResult    = "web_search_tool_result"
+	BlockTypeWebSearchResult        = "web_search_result"
 	BlockTypeRedactedThinking       = "redacted_thinking"
 )
 
@@ -195,6 +201,7 @@ const (
 type Tool struct {
 	Type         string         `json:"type,omitempty"`
 	Name         string         `json:"name,omitempty"`
+	MaxUses      int            `json:"max_uses,omitzero"`
 	Description  string         `json:"description,omitempty"`
 	InputSchema  map[string]any `json:"input_schema,omitempty"`
 	CacheControl *CacheControl  `json:"cache_control,omitempty"`
@@ -204,6 +211,13 @@ type Tool struct {
 // IsToolSearchTool reports whether this tool is a tool search tool definition.
 func (t Tool) IsToolSearchTool() bool {
 	return t.Type == ToolTypeSearchRegex || t.Type == ToolTypeSearchBM25
+}
+
+// IsWebSearchTool reports whether this is Anthropic's versioned native
+// web_search server tool. It is executed by the gateway, not forwarded as a
+// client tool schema to Kiro's inference endpoint.
+func (t Tool) IsWebSearchTool() bool {
+	return t.Name == "web_search" && strings.HasPrefix(t.Type, ToolTypeWebSearch)
 }
 
 // SystemPrompt is a union type: either a plain string or []SystemBlock.

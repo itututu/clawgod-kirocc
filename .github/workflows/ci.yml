@@ -24,6 +24,10 @@ jobs:
         run: go mod tidy && git diff --exit-code
       - name: go fix
         run: go fix ./... && git diff --exit-code
+      - name: Validate integration files
+        run: |
+          bash -n scripts/install.sh scripts/uninstall.sh
+          python3 -m json.tool config/settings.json >/dev/null
       - uses: golangci/golangci-lint-action@v8
         with:
           version: latest

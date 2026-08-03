@@ -1,5 +1,7 @@
 package anthropic
 
+// Modified by ClawGod KiroCC to cover native WebSearch tool parsing.
+
 import (
 	"encoding/json/v2"
 	"testing"
@@ -220,6 +222,22 @@ func TestContentBlock_CacheControl(t *testing.T) {
 	}
 	if b.CacheControl == nil || b.CacheControl.Type != "ephemeral" {
 		t.Fatal("expected cache_control")
+	}
+}
+
+func TestTool_IsWebSearchTool(t *testing.T) {
+	var tool Tool
+	if err := json.Unmarshal([]byte(`{"type":"web_search_20250305","name":"web_search","max_uses":8}`), &tool); err != nil {
+		t.Fatal(err)
+	}
+	if !tool.IsWebSearchTool() {
+		t.Fatalf("expected native web_search tool: %+v", tool)
+	}
+	if tool.MaxUses != 8 {
+		t.Fatalf("MaxUses = %d, want 8", tool.MaxUses)
+	}
+	if (Tool{Type: "web_search_20250305", Name: "other"}).IsWebSearchTool() {
+		t.Fatal("wrong tool name must not be recognized as web_search")
 	}
 }
 

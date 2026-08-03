@@ -1,5 +1,7 @@
 package respconv
 
+// Modified by ClawGod KiroCC to emit native WebSearch SSE blocks.
+
 import (
 	"github.com/d-kuro/kirocc/internal/anthropic"
 	"github.com/d-kuro/kirocc/internal/toolsearch"
@@ -51,4 +53,52 @@ func (s *SSEWriter) WriteToolSearchError(toolUseID string, errorCode string) {
 		},
 		nil,
 	)
+}
+
+// WriteWebSearchResult writes an Anthropic native web_search_tool_result block.
+func (s *SSEWriter) WriteWebSearchResult(toolUseID string, content []map[string]any) {
+	s.writeBlock(
+		map[string]any{
+			"type":        anthropic.BlockTypeWebSearchToolResult,
+			"tool_use_id": toolUseID,
+			"content":     content,
+		},
+		nil,
+	)
+}
+
+// WriteText writes one complete visible text delta.
+func (s *SSEWriter) WriteText(text string) {
+	if text == "" {
+		return
+	}
+	s.ensureStarted()
+	s.fireVisibleOutput()
+	s.switchBlock(anthropic.BlockTypeText)
+	s.writeDelta("text_delta", "text", text)
+}
+
+// FinishWebSearch closes a synthetic native web-search stream with explicit
+// usage, including Anthropic's server tool accounting extension.
+func (s *SSEWriter) FinishWebSearch(inputTokens, outputTokens int) error {
+	s.ensureStarted()
+	s.closeActiveBlock()
+	s.writeSSE("message_delta", map[string]any{
+		"type": "message_delta",
+		"delta": map[string]any{
+			"stop_reason":   "end_turn",
+			"stop_sequence": nil,
+		},
+		"usage": map[string]any{
+			"input_tokens":                inputTokens,
+			"output_tokens":               outputTokens,
+			"cache_read_input_tokens":     0,
+			"cache_creation_input_tokens": 0,
+			"server_tool_use": map[string]any{
+				"web_search_requests": 1,
+			},
+		},
+	})
+	s.writeSSE("message_stop", map[string]any{"type": "message_stop"})
+	return s.writeErr
 }

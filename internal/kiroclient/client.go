@@ -1,5 +1,7 @@
 package kiroclient
 
+// Modified by ClawGod KiroCC to expose native Kiro MCP WebSearch.
+
 import (
 	"bytes"
 	"context"
@@ -49,6 +51,13 @@ type Client interface {
 	GenerateAssistantResponse(ctx context.Context, token string, payload *kiroproto.Payload, region string) (*Response, error)
 }
 
+// WebSearchClient is the optional Kiro MCP capability used for Anthropic's
+// native web_search server tool. Keeping it separate preserves compatibility
+// with existing Client implementations and test doubles.
+type WebSearchClient interface {
+	SearchWeb(ctx context.Context, token, profileARN, region, query string) (*WebSearchResponse, error)
+}
+
 // Response wraps the HTTP response from the Kiro API.
 type Response struct {
 	StatusCode   int
@@ -71,6 +80,7 @@ const defaultBodyReadIdleTimeout = 180 * time.Second
 type HTTPClient struct {
 	httpClient     *http.Client
 	baseURL        string // override for tests; empty = use region-based URL
+	mcpURL         string // override for tests; empty = use q.<region>.amazonaws.com/mcp
 	otel           bool
 	otelBodyLimit  int
 	tokenRefresher TokenRefresher
@@ -85,6 +95,12 @@ type HTTPClientOption func(*HTTPClient)
 // WithBaseURL sets a custom base URL (for testing).
 func WithBaseURL(url string) HTTPClientOption {
 	return func(c *HTTPClient) { c.baseURL = url }
+}
+
+// WithMCPURL sets a custom Kiro MCP endpoint. It is intended for tests and
+// local contract verification; production callers use the region endpoint.
+func WithMCPURL(url string) HTTPClientOption {
+	return func(c *HTTPClient) { c.mcpURL = url }
 }
 
 // WithTokenRefresher sets the token refresh callback for 403 retry.

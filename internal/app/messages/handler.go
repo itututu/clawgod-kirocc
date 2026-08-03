@@ -1,5 +1,7 @@
 package messages
 
+// Modified by ClawGod KiroCC to route native WebSearch before tool conversion.
+
 import (
 	"context"
 	"log/slog"
@@ -56,6 +58,14 @@ func (s *Service) HandleMessages(w http.ResponseWriter, r *http.Request) {
 	s.logRequest(ctx, short, ccSessionID, kiroModel, contextWindowSize, req, thinking)
 
 	effort := resolveEffort(ctx, kiroModel, req, thinking)
+
+	// Anthropic native web_search is a server-side tool. Route it to Kiro MCP
+	// before ordinary tool conversion so it never reaches the inference API as
+	// an invalid client tool schema.
+	if hasNativeWebSearch(req) {
+		s.runWebSearch(ctx, w, req, creds, anthropicModel, contextWindowSize, short)
+		return
+	}
 
 	// Tool search short-circuits to the orchestrator, which has its own retry loop.
 	if tsCtx := toolsearch.NewContext(req.Tools); tsCtx != nil {

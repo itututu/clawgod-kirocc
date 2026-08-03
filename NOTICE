@@ -1,0 +1,20 @@
+ClawGod KiroCC
+Copyright 2026 itututu
+
+This product is based on kirocc by d-kuro:
+https://github.com/d-kuro/kirocc
+Licensed under the Apache License, Version 2.0.
+
+Modified files add Kiro MCP WebSearch support, an isolated ClawGod launch
+profile, installation tooling, documentation, and tests. These modifications
+are not endorsed by d-kuro, Amazon, Anthropic, Kiro, or the ClawGod project.
+
+ClawGod is an optional runtime dependency downloaded from its own release:
+https://github.com/0Chencc/clawgod
+ClawGod is licensed under GPL-3.0 and is not redistributed in this repository.
+The installer applies local path overrides to the downloaded installer and
+generated runtime solely on the user's machine.
+
+Claude Code is proprietary software from Anthropic. This repository does not
+contain or redistribute Claude Code binaries, extracted source, system prompts,
+credentials, session history, or generated ClawGod runtime files.

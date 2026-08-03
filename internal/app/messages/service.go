@@ -1,5 +1,7 @@
 package messages
 
+// Modified by ClawGod KiroCC to expose the optional Kiro MCP client.
+
 import (
 	"context"
 	"time"
@@ -17,6 +19,7 @@ type TokenGetter interface {
 type Service struct {
 	auth              TokenGetter
 	client            kiroclient.Client
+	webSearchClient   kiroclient.WebSearchClient
 	captureEnabled    bool
 	keepAliveInterval time.Duration
 }
@@ -42,6 +45,9 @@ func New(authMgr TokenGetter, client kiroclient.Client, opts ...Option) *Service
 	s := &Service{
 		auth:   authMgr,
 		client: client,
+	}
+	if webSearchClient, ok := client.(kiroclient.WebSearchClient); ok {
+		s.webSearchClient = webSearchClient
 	}
 	for _, opt := range opts {
 		opt(s)

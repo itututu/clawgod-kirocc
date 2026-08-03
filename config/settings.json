@@ -1,0 +1,9 @@
+{
+  "skipDangerousModePermissionPrompt": false,
+  "theme": "dark",
+  "permissions": {
+    "allow": [
+      "WebSearch"
+    ]
+  }
+}

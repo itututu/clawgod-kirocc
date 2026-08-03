@@ -41,6 +41,16 @@ _docs/
 # Debug logs
 debug.log
 
+# Local credentials and generated Claude/ClawGod runtime artifacts
+*.sqlite3
+provider.json
+history.jsonl
+cli.cjs
+cli.original.cjs
+cli.original.js
+.clawgod-kirocc/
+.local-runtime/
+
 # Claude Code - allow skills only
 .claude/*
 !.claude/skills/

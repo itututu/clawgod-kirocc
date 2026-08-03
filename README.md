@@ -1,8 +1,116 @@
-# kirocc
+# ClawGod KiroCC
 
-A local proxy server that relays Anthropic Messages API-compatible requests to the Kiro (Amazon Q) backend using Kiro CLI credentials.
+[中文说明](README_ZH.md) · [Upstream kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod)
 
-Just set `ANTHROPIC_BASE_URL` from any Anthropic API client (e.g., Claude Code) to use Claude models via Kiro.
+[![CI](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml/badge.svg)](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![ClawGod](https://img.shields.io/badge/ClawGod-v1.7.5-16a34a.svg)](https://github.com/0Chencc/clawgod/releases/tag/v1.7.5)
+
+An isolated Claude Code + ClawGod launch profile backed by Kiro credentials,
+with Kiro-native WebSearch support added to the excellent
+[kirocc](https://github.com/d-kuro/kirocc) gateway.
+
+This downstream project keeps the official `claude` command untouched. It
+installs an explicit `claude-kiro` launcher, its own configuration directory,
+an isolated ClawGod runtime, and a patched gateway on port `3457`.
+
+> This project is not affiliated with Anthropic, Amazon, Kiro, d-kuro, or
+> ClawGod. It does not contain Claude Code binaries, extracted source, private
+> system prompts, credentials, or generated ClawGod files.
+
+## Why this fork exists
+
+Claude Code sends its built-in WebSearch as the Anthropic server tool
+`web_search_20250305`. Upstream kirocc v0.6.0 forwards that definition to Kiro's
+inference endpoint as an ordinary client tool, where it is rejected with an
+upstream schema error. This fork detects the native server tool and calls Kiro's
+regional MCP endpoint directly:
+
+```text
+https://q.<region>.amazonaws.com/mcp
+```
+
+The result is converted back to Anthropic-compatible `server_tool_use`,
+`web_search_tool_result`, text, usage, and SSE events. The result block carries
+the same `tool_use_id` as the server tool call.
+
+## Comparison
+
+Verified snapshot: Claude Code 2.1.220, ClawGod 1.7.5, kirocc 0.6.0, and Kiro
+CLI 2.16.0 on macOS arm64 (2026-08-03).
+
+| Capability | Official Claude Code | ClawGod only | Upstream kirocc 0.6.0 | ClawGod KiroCC |
+| --- | :---: | :---: | :---: | :---: |
+| Official Claude Code tool/runtime behavior | ✅ | ✅ patched | ✅ via API adapter | ✅ patched |
+| Kiro CLI credential backend | — | — | ✅ | ✅ |
+| Extended thinking / native effort | Provider-dependent | Provider-dependent | ✅ | ✅ |
+| Anthropic Tool Search emulation | Provider-dependent | Provider-dependent | ✅ | ✅ |
+| Built-in WebSearch through Kiro MCP | — | — | ❌ schema 502 | ✅ |
+| Streaming WebSearch contract | Provider-dependent | Provider-dependent | ❌ | ✅ |
+| Separate command and config profile | Native profile | Replaces/aliases launcher by default | Manual | ✅ `claude-kiro` |
+| Leaves the official `claude` path untouched by this installer | ✅ | ❌ by default | ✅ | ✅ |
+| Search MCP fallback can coexist | Manual | Manual | Manual | ✅ |
+
+```mermaid
+flowchart LR
+    Official["Official claude command<br/>untouched"]
+    Launcher["claude-kiro<br/>isolated config"]
+    ClawGod["ClawGod runtime<br/>official prompt chain + patches"]
+    Gateway["patched kirocc<br/>localhost:3457"]
+    Runtime["Kiro inference<br/>runtime.region.kiro.dev"]
+    Search["Kiro native WebSearch<br/>q.region.amazonaws.com/mcp"]
+
+    Official -. "separate" .- Launcher
+    Launcher --> ClawGod
+    ClawGod --> Gateway
+    Gateway --> Runtime
+    Gateway --> Search
+```
+
+## Prompt behavior
+
+ClawGod still runs Claude Code's built-in system-prompt pipeline. This project
+does not copy or publish that proprietary prompt. The isolated profile adds the
+original, auditable [`config/CLAUDE.md`](config/CLAUDE.md) after the built-in
+instructions to describe WebSearch routing, source-link expectations, update
+isolation, credential hygiene, and verification rules.
+
+## Quick start
+
+Prerequisites:
+
+- macOS or Linux
+- Go 1.26+, Node.js 18+, Bun, ripgrep, and Kiro CLI
+- Kiro CLI logged in
+- an official Claude Code installation (used locally; never copied into this repository)
+
+```bash
+git clone https://github.com/itututu/clawgod-kirocc.git
+cd clawgod-kirocc
+./scripts/install.sh
+claude-kiro
+```
+
+The installer pins ClawGod v1.7.5, verifies its installer SHA-256, gives the
+downloaded installer local-only path overrides, and creates all generated files
+under `~/.clawgod-kirocc` and `~/.local/share/clawgod-kirocc`. It never writes
+the `claude` command. Rerun with `--refresh-clawgod` to refresh the isolated
+runtime through the same checks.
+
+To use an already isolated ClawGod executable without downloading another copy:
+
+```bash
+CLAWGOD_BIN=/absolute/path/to/clawgod ./scripts/install.sh --gateway-only
+```
+
+Uninstall the runtime while preserving its state:
+
+```bash
+./scripts/uninstall.sh
+```
+
+Add `--purge-state` only when you also want to delete the isolated ClawGod
+configuration and session state.
 
 ## Features
 
@@ -13,6 +121,8 @@ Just set `ANTHROPIC_BASE_URL` from any Anthropic API client (e.g., Claude Code) 
 - **Model mapping** — Maps Anthropic model names (e.g., `claude-sonnet-4-6`) to Kiro model names. Customizable via environment variable
 - **Extended Thinking** — Enable via the `[1m]` suffix, the `thinking` field, or `output_config.effort`. Reasoning depth travels natively as `additionalModelRequestFields.output_config.effort` (validated against each model's enum; defaults to `medium` for effort-capable models when thinking is on without an explicit effort)
 - **Tool Search** — Proxy-side implementation of Anthropic's [Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool). Supports `tool_search_tool_regex_20251119` and `tool_search_tool_bm25_20251119` with `defer_loading` for on-demand tool discovery
+- **Kiro-native WebSearch** — Executes Claude Code's `web_search_20250305` through Kiro MCP with paired Anthropic result blocks, streaming SSE, retry, token counting, and server-tool usage
+- **Isolated ClawGod profile** — Dedicated `claude-kiro` command, state, config, gateway binary, port, and update boundary; the official `claude` path is not modified
 - **Prompt Caching** — Converts Anthropic tool-level `cache_control` to Kiro `cachePoint`
 - **Truncation detection** — Automatically injects a notice into the next request when a response is truncated
 - **Retry** — Exponential backoff retry for 403 (token expiry), 429, and 5xx errors. Also retries thinking-only (empty visible) responses
@@ -26,19 +136,19 @@ Just set `ANTHROPIC_BASE_URL` from any Anthropic API client (e.g., Claude Code) 
 - Go 1.26+
 - [Kiro CLI](https://kiro.dev) installed and logged in
 
-## Installation
+## Gateway-only installation
 
-### Homebrew
-
-```bash
-brew install d-kuro/tap/kirocc
-```
-
-### go install
+### Build the gateway only
 
 ```bash
-go install github.com/d-kuro/kirocc/cmd/kirocc@latest
+git clone https://github.com/itututu/clawgod-kirocc.git
+cd clawgod-kirocc
+GOEXPERIMENT=jsonv2 go build -trimpath -o ./dist/kirocc ./cmd/kirocc
 ```
+
+The Go module path intentionally remains `github.com/d-kuro/kirocc` to retain
+upstream compatibility and attribution. Use the source build above or release
+binaries instead of `go install` from the fork URL.
 
 ## Usage
 
