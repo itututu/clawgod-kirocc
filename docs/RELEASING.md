@@ -1,161 +1,104 @@
-# Release Process
+# Fork release process
 
-This document describes the release process for kirocc.
+This repository inherits kirocc's upstream tags through `v0.6.0`. Fork
+releases therefore use a distinct pre-release suffix and must never republish
+the inherited upstream tags to `origin`.
 
-## Overview
+The current candidate is `v0.6.0-clawgod.1`. Creating a tag or GitHub Release
+is a maintainer decision and is intentionally separate from preparing code and
+release notes.
 
-kirocc uses [GoReleaser](https://goreleaser.com/) for automated releases. When a version tag is pushed, GitHub Actions automatically builds multi-platform binaries, publishes them to GitHub Releases, and updates the Homebrew tap.
+## Artifact boundary
 
-## Prerequisites
+GoReleaser publishes standalone `kirocc` gateway binaries for macOS and Linux
+on amd64 and arm64. Those archives do not contain Claude Code, ClawGod runtime
+files, credentials, or the complete-profile installer output.
 
-- Write access to the repository
-- `gh` CLI installed and authenticated
+Users who want `claude-kiro` must clone the source and run
+`./scripts/install.sh`; the installer downloads the pinned ClawGod installer,
+verifies its checksum, and generates the isolated runtime locally.
 
-## Quick Release (via Claude Code)
+## Tag scheme
+
+Use:
+
+```text
+v<upstream-version>-clawgod.<fork-release-number>
+```
+
+Examples:
+
+- `v0.6.0-clawgod.1`
+- `v0.6.0-clawgod.2`
+
+The release workflow only accepts tags matching `v*-clawgod.*`. When rebasing
+onto a later kirocc release, update the upstream-version component and reset the
+fork release number only if that lineage is clear in the release notes.
+
+## Prepare a release
+
+1. Update and verify `main`:
+
+   ```bash
+   git switch main
+   git pull --ff-only origin main
+   git status --short
+   ```
+
+2. Confirm that the candidate tag does not already exist locally or remotely:
+
+   ```bash
+   git show-ref --tags --verify refs/tags/v0.6.0-clawgod.1 || true
+   git ls-remote --exit-code --tags origin refs/tags/v0.6.0-clawgod.1 || true
+   ```
+
+3. Update `CHANGELOG.md` and copy `docs/release-notes/NEXT.md` to a versioned
+   release-note file.
+
+4. Run the complete local validation:
+
+   ```bash
+   make test
+   GOEXPERIMENT=jsonv2 go vet ./...
+   bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh
+   ./scripts/doctor.sh --help >/dev/null
+   python3 -m json.tool config/settings.json >/dev/null
+   xmllint --noout docs/assets/comparison.svg
+   ```
+
+5. Push the release-preparation commit and wait for CI to pass on that exact
+   commit. Do not push `--tags`.
+
+## Publish after explicit approval
+
+Replace the candidate below if a different version was approved:
 
 ```bash
-/release v0.1.0
+git switch main
+git pull --ff-only origin main
+git tag -a v0.6.0-clawgod.1 -m "ClawGod KiroCC v0.6.0-clawgod.1"
+git push origin refs/tags/v0.6.0-clawgod.1
 ```
 
-The `/release` skill guides you through the full process interactively.
-
-## Manual Release Steps
-
-### 1. Update main branch
+The tag triggers `.github/workflows/release.yml`. After it succeeds, replace
+the automatically generated notes with the reviewed version:
 
 ```bash
-git checkout main
-git pull origin main
+gh release edit v0.6.0-clawgod.1 \
+  --notes-file docs/release-notes/v0.6.0-clawgod.1.md
 ```
 
-### 2. Create release branch
+Do not use `git push --tags`: it can publish inherited upstream tags and create
+ambiguous releases.
 
-```bash
-git checkout -b release/v0.0.X
-```
+## Release checklist
 
-### 3. Create release notes
-
-Create `docs/release-notes/v0.0.X.md` following this template:
-
-```markdown
-# Release v0.0.X
-
-## New Features
-
-### Feature Name (#PR)
-
-Description of the feature.
-
-## Bug Fixes
-
-- Fix description (#PR)
-
-## Documentation
-
-- Documentation changes (#PR)
-
-## Code Improvements
-
-- Refactoring or internal changes (#PR)
-
-## Breaking Changes
-
-- Breaking change description
-
-## Contributors
-
-- @username (#PR)
-
-## Upgrade Instructions
-
-### Homebrew
-
-\`\`\`bash
-brew upgrade kirocc
-\`\`\`
-
-### go install
-
-\`\`\`bash
-go install github.com/d-kuro/kirocc/cmd/kirocc@v0.0.X
-\`\`\`
-
-**Full Changelog**: https://github.com/d-kuro/kirocc/compare/v0.0.PREV...v0.0.X
-```
-
-#### Contributors section
-
-List external contributors (non-maintainer) who authored PRs included in this release. Bot accounts should be excluded.
-
-```bash
-gh pr list --state merged --search "merged:>YYYY-MM-DD" \
-  --json number,title,author \
-  --jq '.[] | select(.author.login != "d-kuro" and (.author.login | test("\\[bot\\]$") | not)) | "- @\(.author.login) (#\(.number))"'
-```
-
-If there are no external contributors, omit the Contributors section entirely.
-
-### 4. Commit and push
-
-```bash
-git add docs/release-notes/v0.0.X.md
-git commit -m "docs: add release notes for v0.0.X"
-git push -u origin release/v0.0.X
-```
-
-### 5. Create and merge PR
-
-```bash
-gh pr create --title "Release v0.0.X" --body "Release v0.0.X
-
-See [docs/release-notes/v0.0.X.md](docs/release-notes/v0.0.X.md) for details."
-```
-
-Merge the PR after CI passes.
-
-### 6. Create and push tag
-
-```bash
-git checkout main
-git pull origin main
-git tag v0.0.X
-git push origin v0.0.X
-```
-
-### 7. Update GitHub Release notes
-
-After GoReleaser creates the release, sync the release notes:
-
-```bash
-gh release edit v0.0.X --notes-file docs/release-notes/v0.0.X.md
-```
-
-## Automated Release Process
-
-When a tag is pushed, the following happens automatically:
-
-1. **ci job** — Runs lint and tests
-2. **release job** — Builds and publishes (after ci passes)
-   - Builds binaries for macOS and Linux (amd64, arm64)
-   - Creates tar.gz archives
-   - Publishes to GitHub Releases
-   - Updates Homebrew cask in `d-kuro/homebrew-tap`
-
-## Version Scheme
-
-kirocc follows [Semantic Versioning](https://semver.org/):
-
-- **MAJOR**: Breaking changes
-- **MINOR**: New features (backward compatible)
-- **PATCH**: Bug fixes and documentation
-
-## Release Checklist
-
-- [ ] All tests pass
-- [ ] Linting passes
-- [ ] Release notes created in `docs/release-notes/`
-- [ ] Release PR merged
-- [ ] Tag created and pushed
-- [ ] GitHub Actions completed successfully
-- [ ] GitHub Release notes synced with markdown file
+- [ ] Candidate tag is unique locally and on `origin`.
+- [ ] `CHANGELOG.md` and versioned release notes match the code.
+- [ ] Local validation passes.
+- [ ] GitHub CI passes on the exact commit.
+- [ ] The maintainer explicitly approved the version and publication.
+- [ ] Only the single fork tag was pushed.
+- [ ] GoReleaser completed for all four OS/architecture targets.
+- [ ] Checksums and extracted `kirocc --help` were verified.
+- [ ] GitHub Release notes were replaced with the reviewed markdown.

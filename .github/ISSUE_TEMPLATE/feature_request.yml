@@ -1,0 +1,49 @@
+name: Feature request
+description: Propose a focused improvement to the fork integration.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the user problem first. Requests must preserve the isolated launcher and must not rely on redistributing proprietary or generated runtime files.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What cannot be done cleanly today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful change and its user-facing interface.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Kiro gateway or protocol
+        - Native WebSearch
+        - ClawGod isolation or launcher
+        - Installer or diagnostics
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Project boundaries
+      options:
+        - label: This proposal leaves the official `claude` command and profile untouched.
+          required: true
+        - label: This proposal does not require committing credentials or proprietary/generated Claude Code files.
+          required: true

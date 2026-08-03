@@ -1,6 +1,6 @@
 # ClawGod KiroCC
 
-[中文说明](README_ZH.md) · [Upstream kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1)
+[中文说明](README_ZH.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Upstream kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1)
 
 [![CI](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml/badge.svg)](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -53,6 +53,8 @@ the same `tool_use_id` as the server tool call.
 
 Verified snapshot: Claude Code 2.1.220, ClawGod 1.7.5, kirocc 0.6.0, and Kiro
 CLI 2.16.0 on macOS arm64 (2026-08-03).
+
+![ClawGod KiroCC comparison](docs/assets/comparison.svg)
 
 | Capability | Official Claude Code | ClawGod only | Upstream kirocc 0.6.0 | ClawGod KiroCC |
 | --- | :---: | :---: | :---: | :---: |
@@ -133,7 +135,7 @@ isolation, credential hygiene, and verification rules.
 ### Prerequisites
 
 - macOS or Linux
-- Go 1.26+, Node.js 18+, Bun, curl, and ripgrep
+- Go 1.26+, Node.js 18+, Bun, curl, ripgrep, and either `shasum` or `sha256sum`
 - Kiro CLI installed and logged in, or a Kiro API key and region
 - an official Claude Code installation (used locally; never copied into this repository)
 - `~/.local/bin` on `PATH`
@@ -172,11 +174,17 @@ that child gateway on exit.
 ### Verify the installation
 
 ```bash
+./scripts/doctor.sh
 command -v claude
 command -v claude-kiro
 claude --version
 claude-kiro --version
 ```
+
+The doctor is read-only: it does not print credentials, modify configuration,
+start Claude Code, or start/stop the gateway. A gateway-health warning is
+normal while `claude-kiro` is closed. Use `./scripts/doctor.sh --strict` in
+automation when warnings should also produce a non-zero exit status.
 
 The first two paths must be different. The official command should retain its
 normal branding; `claude-kiro` should show ClawGod's green patched branding when
@@ -653,7 +661,8 @@ Note: `[1m]` has different meanings on request vs. response. On the **request** 
 ```bash
 make test
 GOEXPERIMENT=jsonv2 go vet ./...
-bash -n scripts/install.sh scripts/uninstall.sh
+bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh
+./scripts/doctor.sh --help >/dev/null
 python3 -m json.tool config/settings.json >/dev/null
 ```
 

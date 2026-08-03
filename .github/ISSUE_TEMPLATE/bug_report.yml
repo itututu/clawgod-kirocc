@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a reproducible ClawGod KiroCC integration problem.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste credentials, tokens, provider files, generated `cli.cjs`, private prompts, local databases, or unredacted session logs. Use the security-reporting link for sensitive issues.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety and scope checks
+      options:
+        - label: I tested the latest `main` or identified the exact commit/tag.
+          required: true
+        - label: I confirmed that `claude` and `claude-kiro` resolve to different paths.
+          required: true
+        - label: I removed credentials and sensitive local data from this report.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.6.0-clawgod.1 or git commit SHA
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: OS and architecture
+      placeholder: macOS 15 arm64 or Ubuntu 24.04 amd64
+    validations:
+      required: true
+  - type: dropdown
+    id: install_mode
+    attributes:
+      label: Installation mode
+      options:
+        - Complete profile
+        - Gateway only
+        - Standalone gateway
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: Minimal commands and inputs needed to reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Redacted doctor output
+      description: Run `./scripts/doctor.sh`; remove private paths if desired. The script itself does not print tokens.
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: Minimal redacted logs
+      description: Include only the smallest useful excerpt. Debug and tracing output may contain request bodies.
+      render: shell

@@ -26,6 +26,7 @@ archives:
     files:
       - LICENSE
       - NOTICE
+      - CHANGELOG.md
       - README.md
       - README_ZH.md
 

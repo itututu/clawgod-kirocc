@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - "v*-clawgod.*"
 
 permissions:
   contents: write
@@ -25,7 +25,8 @@ jobs:
         run: go fix ./... && git diff --exit-code
       - name: Validate integration files
         run: |
-          bash -n scripts/install.sh scripts/uninstall.sh
+          bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh
+          ./scripts/doctor.sh --help >/dev/null
           python3 -m json.tool config/settings.json >/dev/null
       - uses: golangci/golangci-lint-action@v8
         with:

@@ -54,6 +54,17 @@ for required_command in go curl node bun rg; do
   fi
 done
 
+sha256_file() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    printf 'missing prerequisite: shasum or sha256sum\n' >&2
+    return 127
+  fi
+}
+
 mkdir -p "$install_root/bin" "$install_root/clawgod/bin" "$state_root/claude-config" "$user_bin_dir"
 
 temporary_root="$(mktemp -d "${TMPDIR:-/tmp}/clawgod-kirocc.XXXXXX")"
@@ -79,7 +90,7 @@ if [[ "$gateway_only" == false && ("$refresh_clawgod" == true || ! -x "$runtime_
   curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
     --output "$clawgod_installer" "$clawgod_url"
 
-  actual_sha256="$(shasum -a 256 "$clawgod_installer" | awk '{print $1}')"
+  actual_sha256="$(sha256_file "$clawgod_installer")"
   if [[ "$actual_sha256" != "$clawgod_installer_sha256" ]]; then
     printf 'ClawGod installer checksum mismatch\nexpected: %s\nactual:   %s\n' \
       "$clawgod_installer_sha256" "$actual_sha256" >&2

@@ -1,6 +1,6 @@
 # ClawGod KiroCC
 
-[English](README.md) · [上游 kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)
+[English](README.md) · [变更记录](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md) · [上游 kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)
 
 这是一个公开、可审计的 Claude Code + ClawGod + Kiro CLI 集成版本。它在
 kirocc 基础上补齐 Kiro 原生 WebSearch，并通过独立的 `claude-kiro` 命令运行，
@@ -61,6 +61,8 @@ https://q.<region>.amazonaws.com/mcp
 
 验证快照：Claude Code 2.1.220、ClawGod 1.7.5、kirocc 0.6.0、Kiro CLI
 2.16.0、macOS arm64，日期 2026-08-03。
+
+![ClawGod KiroCC 版本对比](docs/assets/comparison.svg)
 
 | 能力 | 官方 Claude Code | 仅 ClawGod | 上游 kirocc 0.6.0 | 我们的 ClawGod KiroCC |
 | --- | :---: | :---: | :---: | :---: |
@@ -149,7 +151,7 @@ flowchart LR
 - macOS 或 Linux
 - Go 1.26+
 - Node.js 18+
-- Bun、curl、ripgrep
+- Bun、curl、ripgrep，以及 `shasum` 或 `sha256sum` 之一
 - 已安装并登录的 Kiro CLI，或可用的 Kiro API Key 和 Region
 - 官方 Claude Code（只在用户本机使用，不会进入仓库）
 - `~/.local/bin` 已加入 `PATH`
@@ -194,11 +196,16 @@ claude-kiro
 ### 验证安装与隔离
 
 ```bash
+./scripts/doctor.sh
 command -v claude
 command -v claude-kiro
 claude --version
 claude-kiro --version
 ```
+
+诊断脚本完全只读：不会输出凭据、修改配置、启动 Claude Code，也不会启停网关。
+`claude-kiro` 关闭时出现“网关不可达”警告属于正常情况。自动化环境若希望任何
+警告都返回非零状态，可使用 `./scripts/doctor.sh --strict`。
 
 前两个路径必须不同。官方 `claude` 保持原有外观；交互运行
 `claude-kiro` 时应看到 ClawGod 的绿色 Patch 品牌色。`--version` 很快退出，
@@ -610,7 +617,8 @@ Kiro 推理后端不原生支持 Anthropic Tool Search，因此由网关实现�
 ```bash
 make test
 GOEXPERIMENT=jsonv2 go vet ./...
-bash -n scripts/install.sh scripts/uninstall.sh
+bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh
+./scripts/doctor.sh --help >/dev/null
 python3 -m json.tool config/settings.json >/dev/null
 ```
 
