@@ -1,6 +1,6 @@
 # ClawGod KiroCC
 
-[中文说明](README_ZH.md) · [Upstream kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod)
+[中文说明](README_ZH.md) · [Upstream kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1)
 
 [![CI](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml/badge.svg)](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -17,6 +17,12 @@ an isolated ClawGod runtime, and a patched gateway on port `3457`.
 > This project is not affiliated with Anthropic, Amazon, Kiro, d-kuro, or
 > ClawGod. It does not contain Claude Code binaries, extracted source, private
 > system prompts, credentials, or generated ClawGod files.
+
+## Community
+
+Join the public [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1) for setup
+discussion and release feedback. Never post Kiro credentials, API tokens,
+provider files, or Claude session logs.
 
 ## Why this fork exists
 
@@ -50,6 +56,8 @@ CLI 2.16.0 on macOS arm64 (2026-08-03).
 | Separate command and config profile | Native profile | Replaces/aliases launcher by default | Manual | ✅ `claude-kiro` |
 | Leaves the official `claude` path untouched by this installer | ✅ | ❌ by default | ✅ | ✅ |
 | Search MCP fallback can coexist | Manual | Manual | Manual | ✅ |
+| ClawGod client-side feature unlocks and restriction patches | — | ✅ | — | ✅ |
+| Bypasses provider-side quota, auth, billing, or model access | ❌ | ❌ | ❌ | ❌ |
 
 ```mermaid
 flowchart LR
@@ -66,6 +74,42 @@ flowchart LR
     Gateway --> Runtime
     Gateway --> Search
 ```
+
+## ClawGod capabilities included
+
+This project installs the pinned ClawGod v1.7.5 runtime patch with
+`--lean-off`, so the full Claude Code tool set remains enabled inside the
+isolated `claude-kiro` profile.
+
+| ClawGod patch group | Included behavior in `claude-kiro` |
+| --- | --- |
+| Feature unlocks | Internal User Mode and hidden commands, GrowthBook flag overrides, Agent Teams, third-party Auto-mode, and the client gates for Computer Use, Ultraplan, and Ultrareview |
+| Restriction removals | Removes ClawGod's documented client-injected cyber-risk refusal, URL-generation restriction, cautious-action confirmation, and login notice instructions |
+| Geo neutralization | Neutralizes the documented timezone/proxy/base-URL geo probe and Unicode-apostrophe selector |
+| Visual patches | Green ClawGod branding indicates the patched runtime; message filters expose content hidden from non-Anthropic providers |
+| Reliability patches | Restores Glob/Grep under the Bun runtime, enables the 1-hour prompt-cache allowlist, and applies the third-party billing-header cache fix |
+| Lean settings | Explicitly set to `off`; Plan mode, Agent Teams, bundled skills, Workflows, Remote Control, and Artifact are not removed by Lean mode |
+
+The ClawGod patch bodies and generated `cli.cjs` are intentionally not vendored
+in this repository. [`scripts/install.sh`](scripts/install.sh) downloads the
+pinned v1.7.5 installer, verifies its SHA-256, applies only the isolation-path
+overrides in a temporary directory, and generates the runtime locally. GitHub
+therefore shows the auditable integration and isolation code, while extracted
+Claude Code source and generated runtime artifacts stay off Git.
+
+Here, **unlock** or **restriction removal** means a patch to checks, feature
+flags, or instructions implemented in the local Claude Code client. It does
+**not** create extra Kiro or Anthropic quota, bypass server authentication,
+billing, rate limits, subscription enforcement, regional service availability,
+or model authorization. Computer Use and Remote-backed features still depend on
+the local platform and the selected backend. Removing cautious-action prompts
+also does not grant permission for destructive or unauthorized activity; review
+commands before execution.
+
+Compared with stock ClawGod, this project deliberately does not replace the
+official `claude` launcher. In-place `claude-kiro update` is blocked so every
+refresh keeps the isolated paths and checksum verification; use
+`./scripts/install.sh --refresh-clawgod` instead.
 
 ## Prompt behavior
 

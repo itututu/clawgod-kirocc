@@ -1,6 +1,6 @@
 # ClawGod KiroCC
 
-[English](README.md) · [上游 kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod)
+[English](README.md) · [上游 kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)
 
 这是一个公开、可审计的 Claude Code + ClawGod + Kiro CLI 集成版本。它在
 kirocc 基础上补齐 Kiro 原生 WebSearch，并通过独立的 `claude-kiro` 命令运行，
@@ -9,6 +9,11 @@ kirocc 基础上补齐 Kiro 原生 WebSearch，并通过独立的 `claude-kiro` 
 > 本项目与 Anthropic、Amazon、Kiro、d-kuro、ClawGod 均无隶属关系。
 > 仓库不包含 Claude Code 二进制、提取源码、私有内置系统提示词、账号凭据、
 > 会话历史或本机生成的 ClawGod runtime。
+
+## 交流群
+
+安装交流和版本反馈：[加入 Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)。
+请勿在群内发送 Kiro 凭据、API Token、Provider 文件或 Claude 会话日志。
 
 ## 解决的问题
 
@@ -59,6 +64,8 @@ https://q.<region>.amazonaws.com/mcp
 | 单独命令、配置和端口 | 官方配置 | 默认会替换/别名启动器 | 需手工配置 | ✅ |
 | 本安装器不改官方 `claude` 路径 | ✅ | ❌ 默认安装行为 | ✅ | ✅ |
 | DuckDuckGo 等搜索 MCP 作为备用 | 手工 | 手工 | 手工 | ✅ 可共存 |
+| ClawGod 客户端功能解锁和限制移除 Patch | — | ✅ | — | ✅ |
+| 绕过服务端额度、鉴权、计费或模型权限 | ❌ | ❌ | ❌ | ❌ |
 
 ```mermaid
 flowchart LR
@@ -74,6 +81,38 @@ flowchart LR
     ClawGod --> Gateway
     Gateway --> Runtime
     Gateway --> Search
+```
+
+## 已集成的 ClawGod 功能
+
+本项目安装锁定的 ClawGod v1.7.5 runtime patch，并显式使用
+`--lean-off`，所以独立的 `claude-kiro` 配置会保留完整 Claude Code 工具集。
+
+| ClawGod Patch 类别 | `claude-kiro` 中包含的能力 |
+| --- | --- |
+| 功能解锁 | Internal User Mode 和隐藏命令、GrowthBook 功能旗标覆盖、Agent Teams、第三方 Provider Auto-mode，以及 Computer Use、Ultraplan、Ultrareview 的客户端入口解锁 |
+| 限制移除 | 移除 ClawGod 文档列出的客户端安全测试拒绝提示、URL 生成限制、谨慎操作强制确认和未登录提示 |
+| 地区检测中和 | 中和其文档列出的时区/代理/Base URL 地区探针和 Unicode 撇号选择器 |
+| 视觉 Patch | 绿色 ClawGod 品牌色表示正在运行 Patch 版本；消息过滤 Patch 会显示原本对非 Anthropic Provider 隐藏的内容 |
+| 可靠性 Patch | Bun runtime 下恢复 Glob/Grep、启用 1 小时 Prompt Cache allowlist、修复第三方 Provider billing header 导致的缓存命中问题 |
+| Lean 设置 | 明确设为 `off`；不会由 Lean 模式删除 Plan mode、Agent Teams、内置 Skills、Workflows、Remote Control 或 Artifact |
+
+仓库有意不提交 ClawGod Patch 本体、生成的 `cli.cjs` 或提取出的 Claude Code
+源码。[`scripts/install.sh`](scripts/install.sh) 会下载锁定的 v1.7.5 installer、
+校验 SHA-256、只在临时目录加入隔离路径覆盖，然后在用户本机生成 runtime。
+因此 GitHub 显示的是可审计的集成和隔离代码，生成运行时不会进入 Git。
+
+这里的“解锁”或“绕过限制”指修改本地 Claude Code 客户端中的检查、功能旗标或
+注入提示，**不代表**可以增加 Kiro/Anthropic 服务端额度，也不能绕过服务端鉴权、
+计费、限流、订阅校验、地区服务可用性或模型权限。Computer Use 和依赖 Remote
+的功能仍取决于本机平台及所用后端。移除谨慎操作提示也不等于获得执行破坏性或
+未授权操作的许可，运行命令前仍需自行确认。
+
+与原版 ClawGod 不同，本项目不会替换官方 `claude` 启动器，并禁止
+`claude-kiro update` 原地更新，以防破坏隔离路径和校验边界。更新请运行：
+
+```bash
+./scripts/install.sh --refresh-clawgod
 ```
 
 ## ClawGod 内置提示词能否继续使用
