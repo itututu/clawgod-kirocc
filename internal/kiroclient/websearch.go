@@ -213,7 +213,7 @@ func readMCPResponseBody(body io.ReadCloser) ([]byte, error) {
 		return nil, fmt.Errorf("read Kiro MCP response: %w", err)
 	}
 	if len(b) > maxMCPResponseBytes {
-		return nil, fmt.Errorf("Kiro MCP response exceeds %d bytes", maxMCPResponseBytes)
+		return nil, fmt.Errorf("kiro MCP response exceeds %d bytes", maxMCPResponseBytes)
 	}
 	return b, nil
 }
@@ -224,16 +224,16 @@ func parseMCPWebSearchResponse(body []byte) (*WebSearchResponse, error) {
 		return nil, fmt.Errorf("parse Kiro MCP response: %w", err)
 	}
 	if rpc.Error != nil {
-		return nil, fmt.Errorf("Kiro MCP error %d: %s", rpc.Error.Code, rpc.Error.Message)
+		return nil, fmt.Errorf("kiro MCP error %d: %s", rpc.Error.Code, rpc.Error.Message)
 	}
 	if rpc.Result == nil {
-		return nil, fmt.Errorf("Kiro MCP response has no result")
+		return nil, fmt.Errorf("kiro MCP response has no result")
 	}
 	if rpc.Result.IsError {
-		return nil, fmt.Errorf("Kiro MCP web_search returned a tool error")
+		return nil, fmt.Errorf("kiro MCP web_search returned a tool error")
 	}
 	if len(rpc.Result.Content) == 0 || rpc.Result.Content[0].Type != "text" {
-		return nil, fmt.Errorf("Kiro MCP web_search result has no text content")
+		return nil, fmt.Errorf("kiro MCP web_search result has no text content")
 	}
 	var result WebSearchResponse
 	if err := json.Unmarshal([]byte(rpc.Result.Content[0].Text), &result); err != nil {
