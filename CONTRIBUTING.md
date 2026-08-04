@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for improving ClawGod KiroCC. This repository is a downstream fork of
+Thanks for improving ClaudeCode Kiro. This repository is a downstream fork of
 kirocc, so changes should keep the upstream gateway boundary and the isolated
 ClawGod integration easy to audit.
 
@@ -21,8 +21,8 @@ Prerequisites are Go 1.26+, Node.js 18+, Bash, and the tools listed in the
 README. A Kiro credential is not required for unit tests.
 
 ```bash
-git clone https://github.com/itututu/clawgod-kirocc.git
-cd clawgod-kirocc
+git clone https://github.com/itututu/claudecode-kiro.git
+cd claudecode-kiro
 make test
 GOEXPERIMENT=jsonv2 go vet ./...
 bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh

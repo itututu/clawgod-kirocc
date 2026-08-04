@@ -11,7 +11,7 @@ if ($Help) {
     @"
 Usage: .\scripts\doctor.ps1 [-Strict]
 
-Read-only checks for the Windows ClawGod KiroCC installation. It never prints
+Read-only checks for the Windows ClaudeCode Kiro installation. It never prints
 tokens, modifies configuration, starts Claude Code, or starts/stops the gateway.
 "@ | Write-Host
     exit 0
@@ -110,7 +110,7 @@ function Test-RequiredFile([string]$Path) {
     }
 }
 
-Write-Host "ClawGod KiroCC doctor for Windows (read-only)"
+Write-Host "ClaudeCode Kiro doctor for Windows (read-only)"
 Write-Host "  install root: $InstallRoot"
 Write-Host "  state root:   $StateRoot"
 Write-Host "  runtime:      $RuntimeKind"

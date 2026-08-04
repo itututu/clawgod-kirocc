@@ -1,6 +1,6 @@
 package kiroclient
 
-// Modified by ClawGod KiroCC to expose native Kiro MCP WebSearch.
+// Modified by ClaudeCode Kiro to expose native Kiro MCP WebSearch.
 
 import (
 	"bytes"

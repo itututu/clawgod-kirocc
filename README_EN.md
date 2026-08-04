@@ -1,8 +1,8 @@
-# ClawGod KiroCC
+# ClaudeCode Kiro
 
-[中文说明](README.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Releases](https://github.com/itututu/clawgod-kirocc/releases) · [Upstream kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1)
+[中文说明](README.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Releases](https://github.com/itututu/claudecode-kiro/releases) · [Upstream kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1)
 
-[![CI](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml/badge.svg)](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml)
+[![CI](https://github.com/itututu/claudecode-kiro/actions/workflows/ci.yml/badge.svg)](https://github.com/itututu/claudecode-kiro/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![ClawGod optional](https://img.shields.io/badge/ClawGod-v1.7.5%20optional-16a34a.svg)](https://github.com/0Chencc/clawgod/releases/tag/v1.7.5)
 
@@ -21,13 +21,13 @@ Code runtime; ClawGod is installed only when explicitly selected.
 
 ## Downloads and releases
 
-The [first public prerelease, `v0.6.0-clawgod.1`](https://github.com/itututu/clawgod-kirocc/releases/tag/v0.6.0-clawgod.1),
+The [current prerelease, `v0.6.0-clawgod.2`](https://github.com/itututu/claudecode-kiro/releases/tag/v0.6.0-clawgod.2),
 is now available. This repository inherits the upstream kirocc release lineage
 through `v0.6.0`, so those upstream tags are not republished as releases of this
 fork.
 
 Fork releases use `v<upstream-version>-clawgod.<fork-number>`. The first
-prerelease is `v0.6.0-clawgod.1`; see the [Chinese-first release notes](docs/release-notes/v0.6.0-clawgod.1.md).
+prerelease is `v0.6.0-clawgod.1`; see the [current Chinese-first release notes](docs/release-notes/v0.6.0-clawgod.2.md).
 Always use the source installation below for the complete managed profile.
 
 Release artifacts have a deliberately narrow boundary:
@@ -38,7 +38,7 @@ Release artifacts have a deliberately narrow boundary:
   sessions, or a complete managed `claude-kiro` installation.
 - Clone the source and run `scripts/install.sh` or `scripts/install.ps1` for the
   managed launcher, isolated configuration, or optional ClawGod runtime.
-- Verify release status and builds through [GitHub Actions](https://github.com/itututu/clawgod-kirocc/actions),
+- Verify release status and builds through [GitHub Actions](https://github.com/itututu/claudecode-kiro/actions),
   and do not use binaries from unofficial mirrors.
 
 ## Community
@@ -82,9 +82,9 @@ The last comparison column describes the opt-in `--with-clawgod` profile. The
 default install keeps the same Kiro/WebSearch/isolation features without the
 ClawGod client patches.
 
-![ClawGod KiroCC comparison](docs/assets/comparison.svg)
+![ClaudeCode Kiro comparison](docs/assets/comparison.svg)
 
-| Capability | Official Claude Code | ClawGod only | Upstream kirocc 0.6.0 | ClawGod KiroCC |
+| Capability | Official Claude Code | ClawGod only | Upstream kirocc 0.6.0 | ClaudeCode Kiro |
 | --- | :---: | :---: | :---: | :---: |
 | Official Claude Code tool/runtime behavior | ✅ | ✅ patched | ✅ via API adapter | ✅ default / patched opt-in |
 | Kiro CLI credential backend | — | — | ✅ | ✅ |
@@ -232,8 +232,8 @@ claude-kiro
 macOS/Linux:
 
 ```bash
-git clone https://github.com/itututu/clawgod-kirocc.git
-cd clawgod-kirocc
+git clone https://github.com/itututu/claudecode-kiro.git
+cd claudecode-kiro
 ./scripts/install.sh
 claude-kiro
 ```
@@ -241,8 +241,8 @@ claude-kiro
 Windows PowerShell:
 
 ```powershell
-git clone https://github.com/itututu/clawgod-kirocc.git
-Set-Location clawgod-kirocc
+git clone https://github.com/itututu/claudecode-kiro.git
+Set-Location claudecode-kiro
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 claude-kiro
 ```
@@ -419,8 +419,8 @@ managed `claude-kiro` profile. It requires Go 1.26+ and either a logged-in
 ### Build the standalone gateway
 
 ```bash
-git clone https://github.com/itututu/clawgod-kirocc.git
-cd clawgod-kirocc
+git clone https://github.com/itututu/claudecode-kiro.git
+cd claudecode-kiro
 GOEXPERIMENT=jsonv2 go build -trimpath -o ./dist/kirocc ./cmd/kirocc
 ```
 

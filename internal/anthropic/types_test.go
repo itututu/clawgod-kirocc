@@ -1,6 +1,6 @@
 package anthropic
 
-// Modified by ClawGod KiroCC to cover native WebSearch tool parsing.
+// Modified by ClaudeCode Kiro to cover native WebSearch tool parsing.
 
 import (
 	"encoding/json/v2"

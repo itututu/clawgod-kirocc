@@ -1,6 +1,6 @@
 package respconv
 
-// Modified by ClawGod KiroCC to emit native WebSearch SSE blocks.
+// Modified by ClaudeCode Kiro to emit native WebSearch SSE blocks.
 
 import (
 	"github.com/d-kuro/kirocc/internal/anthropic"

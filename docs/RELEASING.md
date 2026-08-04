@@ -80,7 +80,7 @@ Replace the candidate below if a different version was approved:
 ```bash
 git switch main
 git pull --ff-only origin main
-git tag -a v0.6.0-clawgod.1 -m "ClawGod KiroCC v0.6.0-clawgod.1"
+git tag -a v0.6.0-clawgod.1 -m "ClaudeCode Kiro v0.6.0-clawgod.1"
 git push origin refs/tags/v0.6.0-clawgod.1
 ```
 

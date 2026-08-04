@@ -1,6 +1,6 @@
 package anthropic
 
-// Modified by ClawGod KiroCC to model Anthropic native WebSearch tools.
+// Modified by ClaudeCode Kiro to model Anthropic native WebSearch tools.
 
 import (
 	"encoding/json/jsontext"

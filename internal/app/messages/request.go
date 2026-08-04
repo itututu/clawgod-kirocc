@@ -1,6 +1,6 @@
 package messages
 
-// Modified by ClawGod KiroCC to count native WebSearch requests safely.
+// Modified by ClaudeCode Kiro to count native WebSearch requests safely.
 
 import (
 	"bytes"

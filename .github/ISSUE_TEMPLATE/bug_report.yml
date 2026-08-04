@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible ClawGod KiroCC integration problem.
+description: Report a reproducible ClaudeCode Kiro integration problem.
 title: "[Bug]: "
 labels: [bug]
 body:

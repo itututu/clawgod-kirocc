@@ -1,8 +1,8 @@
-# ClawGod KiroCC
+# ClaudeCode Kiro
 
-[English](README_EN.md) · [变更记录](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md) · [Releases](https://github.com/itututu/clawgod-kirocc/releases) · [上游 kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)
+[English](README_EN.md) · [变更记录](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md) · [Releases](https://github.com/itututu/claudecode-kiro/releases) · [上游 kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)
 
-[![CI](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml/badge.svg)](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml)
+[![CI](https://github.com/itututu/claudecode-kiro/actions/workflows/ci.yml/badge.svg)](https://github.com/itututu/claudecode-kiro/actions/workflows/ci.yml)
 [![许可证](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![ClawGod 可选组件](https://img.shields.io/badge/ClawGod-v1.7.5%20可选-16a34a.svg)](https://github.com/0Chencc/clawgod/releases/tag/v1.7.5)
 
@@ -17,12 +17,12 @@ Code runtime；只有用户主动选择时才安装 ClawGod。
 
 ## 下载与 Releases
 
-[首个公开预发行版 `v0.6.0-clawgod.1`](https://github.com/itututu/clawgod-kirocc/releases/tag/v0.6.0-clawgod.1)
+[当前预发行版 `v0.6.0-clawgod.2`](https://github.com/itututu/claudecode-kiro/releases/tag/v0.6.0-clawgod.2)
 已经发布。仓库继承了上游 kirocc `v0.6.0` 及更早的版本线，因此本项目不会把
 这些上游 Tag 重新包装成自己的 Release。
 
 本项目使用独立版本号 `v<上游版本>-clawgod.<本项目序号>`。首个预发行版为
-`v0.6.0-clawgod.1`，详见[中文优先的发布说明](docs/release-notes/v0.6.0-clawgod.1.md)。
+`v0.6.0-clawgod.1`，当前版本详见[中文优先的发布说明](docs/release-notes/v0.6.0-clawgod.2.md)。
 受管理的完整配置请始终按下文从源码安装。
 
 需要注意 Release 的制品边界：
@@ -32,7 +32,7 @@ Code runtime；只有用户主动选择时才安装 ClawGod。
   `claude-kiro` 安装目录。
 - 需要受管理的 `claude-kiro`、隔离配置或可选 ClawGod 时，仍需克隆源码并
   运行 `scripts/install.sh` 或 `scripts/install.ps1`。
-- Release 发布状态和构建日志以 [GitHub Actions](https://github.com/itututu/clawgod-kirocc/actions)
+- Release 发布状态和构建日志以 [GitHub Actions](https://github.com/itututu/claudecode-kiro/actions)
   为准；不要使用来源不明的二进制包。
 
 ## 交流群
@@ -91,9 +91,9 @@ https://q.<region>.amazonaws.com/mcp
 最后一列表示显式选择 `--with-clawgod` 后的完整 Patch 配置。默认安装仍包含
 Kiro、原生 WebSearch 和配置隔离，但不应用任何 ClawGod Patch。
 
-![ClawGod KiroCC 版本对比](docs/assets/comparison.svg)
+![ClaudeCode Kiro 版本对比](docs/assets/comparison.svg)
 
-| 能力 | 官方 Claude Code | 仅 ClawGod | 上游 kirocc 0.6.0 | 我们的 ClawGod KiroCC |
+| 能力 | 官方 Claude Code | 仅 ClawGod | 上游 kirocc 0.6.0 | 我们的 ClaudeCode Kiro |
 | --- | :---: | :---: | :---: | :---: |
 | Claude Code 原生工具和运行时 | ✅ | ✅ 已 Patch | ✅ 经协议适配 | ✅ 默认官方 / 可选 Patch |
 | 使用 Kiro CLI 订阅/凭据 | — | — | ✅ | ✅ |
@@ -244,8 +244,8 @@ claude-kiro
 macOS/Linux：
 
 ```bash
-git clone https://github.com/itututu/clawgod-kirocc.git
-cd clawgod-kirocc
+git clone https://github.com/itututu/claudecode-kiro.git
+cd claudecode-kiro
 ./scripts/install.sh
 claude-kiro
 ```
@@ -253,8 +253,8 @@ claude-kiro
 Windows PowerShell：
 
 ```powershell
-git clone https://github.com/itututu/clawgod-kirocc.git
-Set-Location clawgod-kirocc
+git clone https://github.com/itututu/claudecode-kiro.git
+Set-Location claudecode-kiro
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 claude-kiro
 ```
@@ -426,8 +426,8 @@ Windows 对应命令为 `.\scripts\uninstall.ps1` 和
 如果只需要 Anthropic → Kiro 网关，不需要受管理的 `claude-kiro` 配置：
 
 ```bash
-git clone https://github.com/itututu/clawgod-kirocc.git
-cd clawgod-kirocc
+git clone https://github.com/itututu/claudecode-kiro.git
+cd claudecode-kiro
 GOEXPERIMENT=jsonv2 go build -trimpath -o ./dist/kirocc ./cmd/kirocc
 ```
 

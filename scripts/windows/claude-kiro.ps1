@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-# ClawGod KiroCC Windows launcher. This file is copied next to
+# ClaudeCode Kiro Windows launcher. This file is copied next to
 # claude-kiro.cmd and its non-secret launcher JSON by install.ps1.
 
 $ErrorActionPreference = "Stop"

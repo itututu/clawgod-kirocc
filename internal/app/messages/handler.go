@@ -1,6 +1,6 @@
 package messages
 
-// Modified by ClawGod KiroCC to route native WebSearch before tool conversion.
+// Modified by ClaudeCode Kiro to route native WebSearch before tool conversion.
 
 import (
 	"context"

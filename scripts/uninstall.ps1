@@ -53,4 +53,4 @@ if ($PurgeState) {
     Write-Host "Preserved state: $StateRoot"
 }
 
-Write-Host "Removed ClawGod KiroCC runtime. Official Claude Code was not touched."
+Write-Host "Removed ClaudeCode Kiro runtime. Official Claude Code was not touched."

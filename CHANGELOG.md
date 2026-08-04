@@ -6,6 +6,12 @@ pre-release tags based on the upstream kirocc version.
 
 ## [Unreleased]
 
+### Changed
+
+- The public repository and current project branding are now `claudecode-kiro`
+  / ClaudeCode Kiro. Existing release tags, artifact names, commands, and local
+  installation paths remain unchanged for compatibility.
+
 ## [v0.6.0-clawgod.2] - 2026-08-03
 
 ### Changed
@@ -71,6 +77,6 @@ pre-release tags based on the upstream kirocc version.
 - In-place `claude-kiro update` is blocked to preserve the isolated path and
   verified installer boundary.
 
-[Unreleased]: https://github.com/itututu/clawgod-kirocc/compare/v0.6.0-clawgod.2...HEAD
-[v0.6.0-clawgod.2]: https://github.com/itututu/clawgod-kirocc/compare/v0.6.0-clawgod.1...v0.6.0-clawgod.2
-[v0.6.0-clawgod.1]: https://github.com/itututu/clawgod-kirocc/releases/tag/v0.6.0-clawgod.1
+[Unreleased]: https://github.com/itututu/claudecode-kiro/compare/v0.6.0-clawgod.2...HEAD
+[v0.6.0-clawgod.2]: https://github.com/itututu/claudecode-kiro/compare/v0.6.0-clawgod.1...v0.6.0-clawgod.2
+[v0.6.0-clawgod.1]: https://github.com/itututu/claudecode-kiro/releases/tag/v0.6.0-clawgod.1

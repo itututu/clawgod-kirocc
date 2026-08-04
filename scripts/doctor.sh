@@ -28,7 +28,7 @@ usage() {
   cat <<'USAGE'
 Usage: ./scripts/doctor.sh [--strict]
 
-Read-only checks for the ClawGod KiroCC installation. It never prints tokens,
+Read-only checks for the ClaudeCode Kiro installation. It never prints tokens,
 modifies configuration, starts Claude Code, or starts/stops the gateway.
 
   --strict  Return non-zero when warnings are present as well as failures.
@@ -87,7 +87,7 @@ check_file() {
   fi
 }
 
-printf 'ClawGod KiroCC doctor (read-only)\n'
+printf 'ClaudeCode Kiro doctor (read-only)\n'
 printf '  install root: %s\n' "$install_root"
 printf '  state root:   %s\n' "$state_root"
 printf '  runtime:      %s\n' "$runtime_kind"

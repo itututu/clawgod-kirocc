@@ -1,6 +1,6 @@
 package messages
 
-// Modified by ClawGod KiroCC to expose the optional Kiro MCP client.
+// Modified by ClaudeCode Kiro to expose the optional Kiro MCP client.
 
 import (
 	"context"

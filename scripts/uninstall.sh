@@ -33,4 +33,4 @@ else
   printf 'Preserved state: %s\n' "$state_root"
 fi
 
-printf 'Removed ClawGod KiroCC runtime. Official Claude Code was not touched.\n'
+printf 'Removed ClaudeCode Kiro runtime. Official Claude Code was not touched.\n'
