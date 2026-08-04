@@ -3,6 +3,8 @@ package auth
 import (
 	"database/sql"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -476,13 +478,18 @@ func TestOpenDB(t *testing.T) {
 }
 
 func TestOpenDB_SpecialCharsInPath(t *testing.T) {
-	// Paths with special characters (e.g. '?', '#', '%') should not break DSN parsing.
+	// Paths with URI-reserved characters (e.g. '?' and '#') should not break
+	// DSN parsing. Windows forbids '?' in file names, so '#' covers that case.
 	dir := t.TempDir()
-	specialDir := dir + "/path with?special#chars"
+	dirName := "path with special#chars"
+	if runtime.GOOS != "windows" {
+		dirName = "path with?special#chars"
+	}
+	specialDir := filepath.Join(dir, dirName)
 	if err := os.MkdirAll(specialDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	dbPath := specialDir + "/data.sqlite3"
+	dbPath := filepath.Join(specialDir, "data.sqlite3")
 
 	// Initialize the DB.
 	initDB, err := sql.Open("sqlite", dbPath)
