@@ -6,6 +6,8 @@ pre-release tags based on the upstream kirocc version.
 
 ## [Unreleased]
 
+## [v0.6.0-clawgod.2] - 2026-08-03
+
 ### Changed
 
 - Documentation now makes the traffic boundary explicit: Kiro CLI is only a
@@ -24,6 +26,9 @@ pre-release tags based on the upstream kirocc version.
   Code encounters a misleading local 401.
 - Doctor scripts now check `kiro-cli whoami` without displaying account output
   and distinguish an optional missing CLI command from a missing login database.
+- The Windows installer now reports the exact active `go.exe` path and version,
+  and rejects Go versions older than the `go.mod` requirement before attempting
+  a `GOEXPERIMENT=jsonv2` build.
 
 ## [v0.6.0-clawgod.1] - 2026-08-03
 
@@ -66,5 +71,6 @@ pre-release tags based on the upstream kirocc version.
 - In-place `claude-kiro update` is blocked to preserve the isolated path and
   verified installer boundary.
 
-[Unreleased]: https://github.com/itututu/clawgod-kirocc/compare/v0.6.0-clawgod.1...HEAD
+[Unreleased]: https://github.com/itututu/clawgod-kirocc/compare/v0.6.0-clawgod.2...HEAD
+[v0.6.0-clawgod.2]: https://github.com/itututu/clawgod-kirocc/compare/v0.6.0-clawgod.1...v0.6.0-clawgod.2
 [v0.6.0-clawgod.1]: https://github.com/itututu/clawgod-kirocc/releases/tag/v0.6.0-clawgod.1

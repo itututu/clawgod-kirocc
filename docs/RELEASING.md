@@ -4,7 +4,7 @@ This repository inherits kirocc's upstream tags through `v0.6.0`. Fork
 releases therefore use a distinct pre-release suffix and must never republish
 the inherited upstream tags to `origin`.
 
-The current candidate is `v0.6.0-clawgod.1`. Creating a tag or GitHub Release
+The current candidate is `v0.6.0-clawgod.2`. Creating a tag or GitHub Release
 is a maintainer decision and is intentionally separate from preparing code and
 release notes.
 
