@@ -21,14 +21,13 @@ Code runtime; ClawGod is installed only when explicitly selected.
 
 ## Downloads and releases
 
-If the [Releases page](https://github.com/itututu/clawgod-kirocc/releases) says
-“There aren’t any releases here,” the first fork release has not been published
-yet; it is not an installation error. This repository inherits the upstream
-kirocc release lineage through `v0.6.0`, so those upstream tags are not
-republished as releases of this fork.
+The [first public prerelease, `v0.6.0-clawgod.1`](https://github.com/itututu/clawgod-kirocc/releases/tag/v0.6.0-clawgod.1),
+is now available. This repository inherits the upstream kirocc release lineage
+through `v0.6.0`, so those upstream tags are not republished as releases of this
+fork.
 
-Fork releases use `v<upstream-version>-clawgod.<fork-number>`. The first version
-is `v0.6.0-clawgod.1`; see the [Chinese-first release notes](docs/release-notes/v0.6.0-clawgod.1.md).
+Fork releases use `v<upstream-version>-clawgod.<fork-number>`. The first
+prerelease is `v0.6.0-clawgod.1`; see the [Chinese-first release notes](docs/release-notes/v0.6.0-clawgod.1.md).
 Always use the source installation below for the complete managed profile.
 
 Release artifacts have a deliberately narrow boundary:

@@ -17,12 +17,11 @@ Code runtime；只有用户主动选择时才安装 ClawGod。
 
 ## 下载与 Releases
 
-[Releases 页面](https://github.com/itututu/clawgod-kirocc/releases)如果显示
-“There aren’t any releases here”，表示本项目的首个 fork 版本尚未正式发布，
-不是安装失败。仓库继承了上游 kirocc `v0.6.0` 及更早的版本线，因此本项目
-不会把这些上游 Tag 重新包装成自己的 Release。
+[首个公开预发行版 `v0.6.0-clawgod.1`](https://github.com/itututu/clawgod-kirocc/releases/tag/v0.6.0-clawgod.1)
+已经发布。仓库继承了上游 kirocc `v0.6.0` 及更早的版本线，因此本项目不会把
+这些上游 Tag 重新包装成自己的 Release。
 
-本项目使用独立版本号 `v<上游版本>-clawgod.<本项目序号>`。首个版本为
+本项目使用独立版本号 `v<上游版本>-clawgod.<本项目序号>`。首个预发行版为
 `v0.6.0-clawgod.1`，详见[中文优先的发布说明](docs/release-notes/v0.6.0-clawgod.1.md)。
 受管理的完整配置请始终按下文从源码安装。
 
