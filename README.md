@@ -184,7 +184,7 @@ v1.7.5 runtime patch，并关闭 Lean 模式。未选择该参数时，`claude-k
 
 - macOS、Linux，或原生 Windows 11 x64
 - Go 1.26+、Node.js 18+
-- 已安装并登录的 Kiro CLI，或可用的 Kiro API Key 和 Region
+- 一种可用的 Kiro 上游凭据：Kiro CLI 登录数据库，或 Kiro API Key 和 Region
 - 官方 Claude Code（只在用户本机使用，不会进入仓库）
 - macOS/Linux 需要 curl
 - 只有选择 ClawGod 时才需要 Bun 1.3.14+、ripgrep，以及 `shasum` 或 `sha256sum` 之一
@@ -192,6 +192,52 @@ v1.7.5 runtime patch，并关闭 Lean 模式。未选择该参数时，`claude-k
 
 Kiro CLI 的原生 Windows 版本当前面向 Windows 11 x64。单独的 KiroCC
 二进制可能能在更多系统运行，但这不等于完整认证配置已得到支持。
+
+Kiro CLI **不是请求流量的中转程序**。数据库模式只借它完成登录并生成本地
+凭据；实际对话和 WebSearch 请求始终由 `kirocc` 网关直接发往 Kiro。已有登录
+数据库时，即使 `kiro-cli` 命令后来被移除，网关仍可继续读取和刷新凭据；但
+重新登录或修复账号时仍需 Kiro CLI。
+
+### 先准备 Kiro 认证
+
+选择以下一种模式。使用 Kiro CLI 数据库时，先安装并登录：
+
+macOS/Linux：
+
+```bash
+curl -fsSL https://cli.kiro.dev/install | bash
+kiro-cli login
+kiro-cli whoami
+```
+
+Windows 11 PowerShell：
+
+```powershell
+irm 'https://cli.kiro.dev/install.ps1' | iex
+kiro-cli login
+kiro-cli whoami
+```
+
+浏览器登录不方便时可运行 `kiro-cli login --use-device-flow`。详见 Kiro 官方的
+[安装说明](https://kiro.dev/docs/cli/installation/)和
+[认证说明](https://kiro.dev/docs/cli/authentication/)。
+
+不想安装 Kiro CLI 时，改用 API Key。安装和每次启动 `claude-kiro` 的进程都
+必须能读到这些变量；本项目不会把 Key 写入仓库或启动器：
+
+```bash
+export KIRO_API_KEY=ksk_...
+export KIRO_API_REGION=us-east-1
+./scripts/install.sh
+claude-kiro
+```
+
+```powershell
+$env:KIRO_API_KEY = "ksk_..."
+$env:KIRO_API_REGION = "us-east-1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+claude-kiro
+```
 
 ### 默认安装：官方 Claude Code runtime
 
@@ -215,7 +261,9 @@ claude-kiro
 
 默认安装器只编译 KiroCC 网关，并围绕本机已有的官方 Claude Code 创建独立
 `claude-kiro` 配置；不会下载 ClawGod，也不会创建、替换、重命名或删除官方
-`claude` 命令。
+`claude` 命令。安装器会先确认 `KIRO_API_KEY` 或现有登录数据库至少有一个；
+缺少凭据时会在构建前停止，并给出官方 Kiro CLI 安装/登录命令，不会留下一个
+首次运行必然 401 的安装结果。
 
 ### 可选安装 ClawGod
 
@@ -440,6 +488,19 @@ kirocc 的上游凭据来自 Kiro CLI 数据库或 `KIRO_API_KEY`。
    服务端鉴权或额度。
 
 `KIROCC_API_KEY` 是本地代理访问密码，不是 Kiro 凭据。
+
+数据路径如下；`kiro-cli` 不在逐请求链路中：
+
+```text
+Claude Code ──Anthropic API──> 127.0.0.1:3457 (kirocc)
+                                      │
+                         读取数据库或 KIRO_API_KEY
+                                      │
+                                      └──> Kiro Messages API / Kiro MCP
+```
+
+网关直接完成请求转换、上游发送和凭据刷新。原生 WebSearch 也是网关直接调用
+Kiro MCP，并非启动 `kiro-cli` 子进程。
 
 ### 命令行选项
 
@@ -688,9 +749,11 @@ Kiro 推理后端不原生支持 Anthropic Tool Search，因此由网关实现�
 | --- | --- |
 | `claude-kiro: command not found` | 把用户 `.local/bin` 加入 `PATH`；Windows 安装后请打开新终端 |
 | 安装器提示缺少依赖 | 默认模式需要 Go/Node，macOS/Linux 另需 curl；只有 ClawGod 模式需要 Bun/ripgrep/SHA-256 工具 |
+| `No usable Kiro credential source found` | 运行错误中给出的 Kiro CLI 安装命令，再执行 `kiro-cli login` 和 `kiro-cli whoami`；或在安装及启动时设置 `KIRO_API_KEY`/`KIRO_API_REGION` |
 | 找不到官方 Claude Code | 先确认 `command -v claude` 有结果，再重新安装 |
 | 网关启动失败 | 查看 `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`；端口冲突时使用 `KIROCC_PORT=3458` |
-| Kiro 返回 401/403 | 重新登录 Kiro CLI，或检查 `KIRO_API_KEY`/`KIRO_API_REGION`；不要误用 `KIROCC_API_KEY` |
+| `authentication failed` 或 Kiro 返回 401/403 | 这是上游 Kiro 凭据问题：重新执行 `kiro-cli login`/`kiro-cli whoami`，或检查 `KIRO_API_KEY`/`KIRO_API_REGION` |
+| `invalid API key` / 已运行网关拒绝 `KIROCC_API_KEY` | 这是本地代理密码或旧网关端口冲突，不是 Kiro 登录；使用匹配的 `KIROCC_API_KEY`，或以 `KIROCC_PORT=3458` 启动新实例 |
 | WebSearch 仍出现旧的 Schema 502 | 确认启动的是 `claude-kiro`，重跑安装器，并确认网关文件为 `kirocc-native-websearch` |
 | 原生 WebSearch 返回 HTTP 400 | 不要在手工请求中把 `web_search_20250305` 与客户端 Tool 混合 |
 | `claude-kiro update` 被拦截 | 这是预期行为；拉取仓库后重跑安装器，仅在 ClawGod 模式增加 refresh 参数 |

@@ -169,7 +169,7 @@ isolation, credential hygiene, and verification rules.
 
 - macOS, Linux, or native Windows 11 x64
 - Go 1.26+ and Node.js 18+
-- Kiro CLI installed and logged in, or a Kiro API key and region
+- one usable Kiro upstream credential: a Kiro CLI login database, or a Kiro API key and region
 - an official Claude Code installation (used locally; never copied into this repository)
 - macOS/Linux: curl
 - optional ClawGod mode only: Bun 1.3.14+, ripgrep, and either `shasum` or `sha256sum`
@@ -178,6 +178,54 @@ isolation, credential hygiene, and verification rules.
 Kiro CLI's native Windows distribution currently targets Windows 11 x64.
 Standalone KiroCC release binaries may run elsewhere, but that does not prove
 the complete authenticated profile is supported there.
+
+Kiro CLI is **not a request-traffic proxy**. Database mode uses it only to log
+in and create the local credential. `kirocc` sends every chat and WebSearch
+request directly to Kiro. If the login database already exists, the gateway can
+continue reading and refreshing it even if the `kiro-cli` command is later
+removed; Kiro CLI is still needed to log in again or repair the account.
+
+### Prepare Kiro authentication first
+
+Choose one mode. For Kiro CLI database authentication, install and log in:
+
+macOS/Linux:
+
+```bash
+curl -fsSL https://cli.kiro.dev/install | bash
+kiro-cli login
+kiro-cli whoami
+```
+
+Windows 11 PowerShell:
+
+```powershell
+irm 'https://cli.kiro.dev/install.ps1' | iex
+kiro-cli login
+kiro-cli whoami
+```
+
+Use `kiro-cli login --use-device-flow` when browser login is inconvenient. See
+Kiro's official [installation](https://kiro.dev/docs/cli/installation/) and
+[authentication](https://kiro.dev/docs/cli/authentication/) documentation.
+
+To avoid installing Kiro CLI, use an API key instead. The variables must be
+visible both to the installer and whenever `claude-kiro` is launched; this
+project does not persist the key in the repository or launcher:
+
+```bash
+export KIRO_API_KEY=ksk_...
+export KIRO_API_REGION=us-east-1
+./scripts/install.sh
+claude-kiro
+```
+
+```powershell
+$env:KIRO_API_KEY = "ksk_..."
+$env:KIRO_API_REGION = "us-east-1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+claude-kiro
+```
 
 ### Default install: official Claude Code runtime
 
@@ -202,7 +250,10 @@ claude-kiro
 The default installer builds the patched gateway and creates an isolated
 `claude-kiro` profile around the already-installed official Claude Code runtime.
 It does not download ClawGod and does not create, replace, rename, or delete the
-official `claude` command.
+official `claude` command. Before building, it now requires either
+`KIRO_API_KEY` or an existing login database. A missing credential stops with
+the official Kiro CLI install/login commands instead of producing an install
+whose first request must fail with 401.
 
 ### Opt in to ClawGod
 
@@ -435,6 +486,20 @@ The gateway supports two mutually exclusive upstream credential sources:
 
 `KIROCC_API_KEY` is different: it protects access to the **local proxy**. It is
 not a Kiro credential.
+
+The data path is below; `kiro-cli` is not in the per-request path:
+
+```text
+Claude Code ──Anthropic API──> 127.0.0.1:3457 (kirocc)
+                                      │
+                         reads DB or KIRO_API_KEY
+                                      │
+                                      └──> Kiro Messages API / Kiro MCP
+```
+
+The gateway performs request conversion, upstream delivery, and credential
+refresh itself. Native WebSearch also calls Kiro MCP directly; it does not
+spawn a `kiro-cli` child process.
 
 ### Command-line options
 
@@ -733,9 +798,11 @@ Note: `[1m]` has different meanings on request vs. response. On the **request** 
 | --- | --- |
 | `claude-kiro: command not found` | Add the per-user `.local/bin` directory to `PATH`; on Windows open a new terminal after installation |
 | Installer reports a missing prerequisite | Default mode needs Go/Node (plus curl on macOS/Linux); Bun, ripgrep, and SHA-256 tooling are required only with ClawGod |
+| `No usable Kiro credential source found` | Run the displayed Kiro CLI install command, then `kiro-cli login` and `kiro-cli whoami`; or set `KIRO_API_KEY`/`KIRO_API_REGION` for installation and launch |
 | `official Claude Code command not found` | Install official Claude Code and confirm `command -v claude` before rerunning the installer |
 | Gateway fails to start | Read `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`; choose another port with `KIROCC_PORT=3458` if needed |
-| Kiro returns 401/403 | Log in again with Kiro CLI, or verify `KIRO_API_KEY` and `KIRO_API_REGION`; do not substitute `KIROCC_API_KEY` |
+| `authentication failed` or Kiro returns 401/403 | This is an upstream Kiro credential problem: run `kiro-cli login`/`kiro-cli whoami` again, or verify `KIRO_API_KEY` and `KIRO_API_REGION` |
+| `invalid API key` / running gateway rejects `KIROCC_API_KEY` | This is a local proxy password or stale-port conflict, not Kiro login; use the matching `KIROCC_API_KEY` or start a new instance with `KIROCC_PORT=3458` |
 | WebSearch still reports the old schema 502 | Confirm `command -v claude-kiro`, rerun `./scripts/install.sh`, and verify the gateway binary is `kirocc-native-websearch` |
 | Native WebSearch returns HTTP 400 | Do not combine `web_search_20250305` with client tools in one hand-written request |
 | `claude-kiro update` is blocked | Expected; pull the repository and rerun the installer, adding the refresh option only for ClawGod mode |

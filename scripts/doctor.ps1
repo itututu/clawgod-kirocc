@@ -186,8 +186,28 @@ if ($env:KIRO_API_KEY) {
     $databasePath = $databaseCandidates | Where-Object {
         Test-Path -LiteralPath $_ -PathType Leaf
     } | Select-Object -First 1
-    if ($databasePath) { Write-Pass "Kiro CLI database found: $databasePath" }
-    else { Write-Failure "Kiro CLI database not found; set KIROCC_DB_PATH or KIRO_API_KEY" }
+    if ($databasePath) {
+        Write-Pass "Kiro CLI database found: $databasePath"
+        $kiroCli = Get-Command kiro-cli -ErrorAction SilentlyContinue
+        if ($kiroCli) {
+            Write-Pass "Kiro CLI command is available for login maintenance"
+            & kiro-cli whoami *> $null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Pass "kiro-cli whoami confirms a logged-in profile (output redacted)"
+            } else {
+                Write-Failure "kiro-cli whoami failed; run kiro-cli login, then kiro-cli whoami"
+            }
+        } else {
+            Write-WarningResult "Kiro CLI command is missing; the gateway can use the existing database, but login repair requires Kiro CLI"
+        }
+    } else {
+        Write-Failure "Kiro CLI database not found; set KIROCC_DB_PATH or KIRO_API_KEY"
+        if (Get-Command kiro-cli -ErrorAction SilentlyContinue) {
+            Write-WarningResult "run kiro-cli login, then kiro-cli whoami to create a usable login database"
+        } else {
+            Write-WarningResult "install Kiro CLI and log in, or set KIRO_API_KEY and KIRO_API_REGION"
+        }
+    }
 }
 
 $GatewayPort = 0

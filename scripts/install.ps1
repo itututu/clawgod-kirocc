@@ -33,6 +33,9 @@ Environment overrides:
   CLAWGOD_KIROCC_STATE_ROOT
   CLAWGOD_KIROCC_BIN_DIR
   KIROCC_PORT
+  KIROCC_DB_PATH
+  KIRO_API_KEY       Kiro upstream API key; makes Kiro CLI optional.
+  KIRO_API_REGION
 "@ | Write-Host
 }
 
@@ -89,6 +92,68 @@ if (Test-Path -LiteralPath $officialBackup -PathType Leaf) {
 }
 $OfficialClaudePath = [IO.Path]::GetFullPath($OfficialClaudePath)
 $OfficialClaudeHash = (Get-FileHash -LiteralPath $OfficialClaudePath -Algorithm SHA256).Hash
+
+$kiroDatabaseCandidates = if ($env:KIROCC_DB_PATH) {
+    @($env:KIROCC_DB_PATH)
+} else {
+    @(
+        (Join-Path $env:USERPROFILE ".local\share\kiro-cli\data.sqlite3"),
+        (Join-Path $env:LOCALAPPDATA "kiro-cli\data.sqlite3"),
+        (Join-Path $env:APPDATA "kiro-cli\data.sqlite3")
+    ) | Where-Object { $_ }
+}
+$kiroDatabasePath = $kiroDatabaseCandidates | Where-Object {
+    Test-Path -LiteralPath $_ -PathType Leaf
+} | Select-Object -First 1
+if ($env:KIRO_API_KEY) {
+    Write-Host "Kiro authentication: API-key mode (Kiro CLI is not required)."
+} elseif ($kiroDatabasePath) {
+    $kiroCli = Get-Command kiro-cli -ErrorAction SilentlyContinue
+    if ($kiroCli) {
+        & kiro-cli whoami *> $null
+        if ($LASTEXITCODE -ne 0) {
+            throw @"
+Kiro CLI database exists, but kiro-cli whoami did not confirm a logged-in profile.
+Run:
+
+  kiro-cli login
+  kiro-cli whoami
+
+Then rerun this installer. Request traffic will still be sent directly by the
+kirocc gateway; this check only validates the credential it will read.
+"@
+        }
+        Write-Host "Kiro authentication: existing login confirmed (whoami output redacted)."
+    } else {
+        Write-Host "Kiro authentication: existing login database found (Kiro CLI command unavailable; live status not checked)."
+    }
+} else {
+    $kiroCliState = if (Get-Command kiro-cli -ErrorAction SilentlyContinue) {
+        "Kiro CLI is installed, but its login database was not found."
+    } else {
+        "Kiro CLI is not installed and no existing login database was found."
+    }
+    $expectedDatabase = if ($kiroDatabaseCandidates.Count -gt 0) {
+        $kiroDatabaseCandidates -join "; "
+    } else {
+        "<no database candidate>"
+    }
+    throw @"
+No usable Kiro credential source found.
+$kiroCliState
+
+Kiro CLI is used only to create the local login credential; request traffic is
+sent directly by the kirocc gateway. Install/login with:
+
+  irm 'https://cli.kiro.dev/install.ps1' | iex
+  kiro-cli login
+  kiro-cli whoami
+
+Or set KIRO_API_KEY (and optionally KIRO_API_REGION) before running this
+installer and whenever claude-kiro is launched.
+Expected database: $expectedDatabase
+"@
+}
 
 New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $InstallRoot "bin") | Out-Null

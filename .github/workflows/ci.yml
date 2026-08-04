@@ -40,12 +40,19 @@ jobs:
           export CLAWGOD_KIROCC_STATE_ROOT="$smoke_root/state/.clawgod-kirocc"
           export CLAWGOD_KIROCC_BIN_DIR="$smoke_root/user-bin"
           export KIROCC_PORT=45678
+          export KIROCC_DB_PATH="$smoke_root/missing-kiro.sqlite3"
+          if ./scripts/install.sh >"$smoke_root/missing-auth.log" 2>&1; then
+            echo 'installer unexpectedly accepted a missing Kiro credential source' >&2
+            exit 1
+          fi
+          grep -q 'No usable Kiro credential source found' "$smoke_root/missing-auth.log"
+          unset KIROCC_DB_PATH
+          export KIRO_API_KEY=ksk_ci_placeholder
+          export KIRO_API_REGION=us-east-1
           ./scripts/install.sh
           test "$(cat "$CLAWGOD_KIROCC_INSTALL_ROOT/install-mode")" = official
           test ! -d "$CLAWGOD_KIROCC_INSTALL_ROOT/clawgod"
           claude-kiro --version
-          export KIRO_API_KEY=ksk_ci_placeholder
-          export KIRO_API_REGION=us-east-1
           ./scripts/doctor.sh
       - uses: golangci/golangci-lint-action@v9
         with:
@@ -96,6 +103,15 @@ jobs:
           $env:CLAWGOD_KIROCC_STATE_ROOT = $stateRoot
           $env:CLAWGOD_KIROCC_BIN_DIR = $userBin
           $env:KIROCC_PORT = "45678"
+          $env:KIROCC_DB_PATH = Join-Path $smokeRoot "missing-kiro.sqlite3"
+          $missingAuthOutput = (& powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 2>&1 | Out-String)
+          if ($LASTEXITCODE -eq 0) { throw "installer unexpectedly accepted a missing Kiro credential source" }
+          if ($missingAuthOutput -notmatch "No usable Kiro credential source found") {
+            throw "installer missing-auth failure was not actionable: $missingAuthOutput"
+          }
+          Remove-Item Env:KIROCC_DB_PATH
+          $env:KIRO_API_KEY = "ksk_ci_placeholder"
+          $env:KIRO_API_REGION = "us-east-1"
           & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
           if ($LASTEXITCODE -ne 0) { throw "Windows PowerShell installer failed" }
           $env:PATH = "$userBin;$env:PATH"
@@ -107,6 +123,4 @@ jobs:
           }
           & (Join-Path $userBin "claude-kiro.cmd") --version
           if ($LASTEXITCODE -ne 0) { throw "default Windows launcher failed" }
-          $env:KIRO_API_KEY = "ksk_ci_placeholder"
-          $env:KIRO_API_REGION = "us-east-1"
           ./scripts/doctor.ps1

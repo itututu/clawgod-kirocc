@@ -172,8 +172,23 @@ else
   kiro_db="${KIROCC_DB_PATH:-$default_db}"
   if [[ -n "$kiro_db" && -f "$kiro_db" ]]; then
     pass "Kiro CLI database found: $kiro_db"
+    if command -v kiro-cli >/dev/null 2>&1; then
+      pass 'Kiro CLI command is available for login maintenance'
+      if kiro-cli whoami </dev/null >/dev/null 2>&1; then
+        pass 'kiro-cli whoami confirms a logged-in profile (output redacted)'
+      else
+        fail 'kiro-cli whoami failed; run kiro-cli login, then kiro-cli whoami'
+      fi
+    else
+      warn 'Kiro CLI command is missing; the gateway can use the existing database, but login repair requires Kiro CLI'
+    fi
   elif [[ -n "$kiro_db" ]]; then
     fail "Kiro CLI database not found: $kiro_db"
+    if command -v kiro-cli >/dev/null 2>&1; then
+      warn 'run kiro-cli login, then kiro-cli whoami to create a usable login database'
+    else
+      warn 'install Kiro CLI and log in, or set KIRO_API_KEY and KIRO_API_REGION'
+    fi
   else
     warn 'no default Kiro CLI database path for this OS; use KIROCC_DB_PATH or KIRO_API_KEY'
   fi

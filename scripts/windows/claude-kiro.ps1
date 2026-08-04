@@ -84,22 +84,6 @@ if (-not (Test-Path -LiteralPath $runtimeBin -PathType Leaf)) {
     exit 127
 }
 
-# Kiro CLI 2.x normally uses this cross-platform path. Probe known Windows
-# alternatives as well and pass the first existing database explicitly.
-if (-not $env:KIRO_API_KEY -and -not $env:KIROCC_DB_PATH) {
-    $databaseCandidates = @(
-        (Join-Path $env:USERPROFILE ".local\share\kiro-cli\data.sqlite3"),
-        (Join-Path $env:LOCALAPPDATA "kiro-cli\data.sqlite3"),
-        (Join-Path $env:APPDATA "kiro-cli\data.sqlite3")
-    ) | Where-Object { $_ }
-    $databasePath = $databaseCandidates | Where-Object {
-        Test-Path -LiteralPath $_ -PathType Leaf
-    } | Select-Object -First 1
-    if ($databasePath) {
-        $env:KIROCC_DB_PATH = $databasePath
-    }
-}
-
 function Test-GatewayHealth {
     try {
         $response = Invoke-WebRequest -Uri "$gatewayUrl/health" -UseBasicParsing -TimeoutSec 1
@@ -109,13 +93,70 @@ function Test-GatewayHealth {
     }
 }
 
+function Test-GatewayAccess {
+    try {
+        $headers = @{ Authorization = "Bearer $proxyToken" }
+        $response = Invoke-WebRequest -Uri "$gatewayUrl/v1/models" -Headers $headers -UseBasicParsing -TimeoutSec 2
+        return $response.StatusCode -ge 200 -and $response.StatusCode -lt 300
+    } catch {
+        return $false
+    }
+}
+
+function Set-LocalKiroCredentialSource {
+    if ($env:KIRO_API_KEY) { return }
+
+    $databaseCandidates = if ($env:KIROCC_DB_PATH) {
+        @($env:KIROCC_DB_PATH)
+    } else {
+        @(
+            (Join-Path $env:USERPROFILE ".local\share\kiro-cli\data.sqlite3"),
+            (Join-Path $env:LOCALAPPDATA "kiro-cli\data.sqlite3"),
+            (Join-Path $env:APPDATA "kiro-cli\data.sqlite3")
+        ) | Where-Object { $_ }
+    }
+    $databasePath = $databaseCandidates | Where-Object {
+        Test-Path -LiteralPath $_ -PathType Leaf
+    } | Select-Object -First 1
+    if ($databasePath) {
+        $env:KIROCC_DB_PATH = $databasePath
+        return
+    }
+
+    $expectedDatabase = if ($databaseCandidates.Count -gt 0) {
+        $databaseCandidates -join "; "
+    } else {
+        "<no database candidate>"
+    }
+    Write-Error @"
+claude-kiro: no usable Kiro credential source was found.
+Kiro CLI is only needed to create the login credential; traffic is sent by the
+kirocc gateway itself.
+
+Install/login Kiro CLI:
+  irm 'https://cli.kiro.dev/install.ps1' | iex
+  kiro-cli login
+  kiro-cli whoami
+
+Or set KIRO_API_KEY (and optionally KIRO_API_REGION) before launching.
+Expected database: $expectedDatabase
+"@
+    exit 78
+}
+
 $startedGateway = $null
 $logBase = Join-Path $env:TEMP "clawgod-kirocc-gateway-$PID-$gatewayPort"
 $stdoutLog = "$logBase.out.log"
 $stderrLog = "$logBase.err.log"
 
 try {
-    if (-not (Test-GatewayHealth)) {
+    $gatewayHealthy = Test-GatewayHealth
+    if ($gatewayHealthy -and -not (Test-GatewayAccess)) {
+        Write-Error "claude-kiro: a gateway is already running at $gatewayUrl but rejects the current KIROCC_API_KEY. Use the matching local proxy key or choose an unused port, for example: `$env:KIROCC_PORT='3458'; claude-kiro"
+        exit 1
+    }
+    if (-not $gatewayHealthy) {
+        Set-LocalKiroCredentialSource
         $startedGateway = Start-Process -FilePath $gatewayBin `
             -ArgumentList @("-port", "$gatewayPort") `
             -RedirectStandardOutput $stdoutLog `
@@ -141,6 +182,10 @@ try {
                         ForEach-Object { Write-Host $_ }
                 }
             }
+            exit 1
+        }
+        if (-not (Test-GatewayAccess)) {
+            Write-Error "claude-kiro: gateway started but rejected the configured local proxy key"
             exit 1
         }
     }

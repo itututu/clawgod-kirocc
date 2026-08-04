@@ -73,6 +73,8 @@ jobs:
           $env:CLAWGOD_KIROCC_STATE_ROOT = $stateRoot
           $env:CLAWGOD_KIROCC_BIN_DIR = $userBin
           $env:KIROCC_PORT = "45678"
+          $env:KIRO_API_KEY = "ksk_ci_placeholder"
+          $env:KIRO_API_REGION = "us-east-1"
           & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
           if ($LASTEXITCODE -ne 0) { throw "Windows PowerShell installer failed" }
           $env:PATH = "$userBin;$env:PATH"

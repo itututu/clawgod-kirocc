@@ -6,6 +6,25 @@ pre-release tags based on the upstream kirocc version.
 
 ## [Unreleased]
 
+### Changed
+
+- Documentation now makes the traffic boundary explicit: Kiro CLI is only a
+  login-database bootstrap/maintenance tool, while the kirocc gateway sends
+  chat and WebSearch requests directly to Kiro.
+
+### Fixed
+
+- The macOS/Linux and Windows installers now reject a missing Kiro credential
+  source before building, while preserving Kiro API-key mode with no Kiro CLI
+  dependency.
+- Generated launchers now fail with actionable Kiro login instructions when a
+  local gateway would start without a database or API key.
+- Launchers authenticate an already-running gateway's `/v1/models` endpoint so
+  a stale process with a different `KIROCC_API_KEY` is reported before Claude
+  Code encounters a misleading local 401.
+- Doctor scripts now check `kiro-cli whoami` without displaying account output
+  and distinguish an optional missing CLI command from a missing login database.
+
 ## [v0.6.0-clawgod.1] - 2026-08-03
 
 ### Added

@@ -28,6 +28,9 @@ Environment overrides:
   CLAWGOD_KIROCC_STATE_ROOT      Isolated ClawGod state/config root.
   CLAWGOD_KIROCC_BIN_DIR         Directory for the claude-kiro launcher.
   KIROCC_PORT                    Gateway port (default: 3457).
+  KIROCC_DB_PATH                 Existing Kiro CLI login database.
+  KIRO_API_KEY                   Kiro upstream API key; makes Kiro CLI optional.
+  KIRO_API_REGION                Kiro API-key region (default: us-east-1).
 USAGE
 }
 
@@ -77,6 +80,58 @@ if [[ -e "${official_claude_command}.orig" ]]; then
   official_claude_candidate="${official_claude_command}.orig"
 fi
 official_claude_real="$(node -e 'console.log(require("fs").realpathSync(process.argv[1]))' "$official_claude_candidate")"
+
+case "$(uname -s)" in
+  Darwin) default_kiro_db="$HOME/Library/Application Support/kiro-cli/data.sqlite3" ;;
+  Linux) default_kiro_db="$HOME/.local/share/kiro-cli/data.sqlite3" ;;
+  *) default_kiro_db="" ;;
+esac
+kiro_db_path="${KIROCC_DB_PATH:-$default_kiro_db}"
+if [[ -n "${KIRO_API_KEY:-}" ]]; then
+  printf 'Kiro authentication: API-key mode (Kiro CLI is not required).\n'
+elif [[ -n "$kiro_db_path" && -f "$kiro_db_path" ]]; then
+  if command -v kiro-cli >/dev/null 2>&1; then
+    if kiro-cli whoami </dev/null >/dev/null 2>&1; then
+      printf 'Kiro authentication: existing login confirmed (whoami output redacted).\n'
+    else
+      cat >&2 <<EOF
+Kiro CLI database exists, but kiro-cli whoami did not confirm a logged-in profile.
+Run:
+
+  kiro-cli login
+  kiro-cli whoami
+
+Then rerun this installer. Request traffic will still be sent directly by the
+kirocc gateway; this check only validates the credential it will read.
+EOF
+      exit 78
+    fi
+  else
+    printf 'Kiro authentication: existing login database found (Kiro CLI command unavailable; live status not checked).\n'
+  fi
+else
+  if command -v kiro-cli >/dev/null 2>&1; then
+    kiro_cli_state='Kiro CLI is installed, but its login database was not found.'
+  else
+    kiro_cli_state='Kiro CLI is not installed and no existing login database was found.'
+  fi
+  cat >&2 <<EOF
+No usable Kiro credential source found.
+$kiro_cli_state
+
+Kiro CLI is used only to create the local login credential; request traffic is
+sent directly by the kirocc gateway. Install/login with:
+
+  curl -fsSL https://cli.kiro.dev/install | bash
+  kiro-cli login
+  kiro-cli whoami
+
+Or set KIRO_API_KEY (and optionally KIRO_API_REGION) before running this
+installer and whenever claude-kiro is launched.
+Expected database: ${kiro_db_path:-<no default for this OS>}
+EOF
+  exit 78
+fi
 
 sha256_file() {
   if command -v shasum >/dev/null 2>&1; then
@@ -258,7 +313,57 @@ if [[ "\${1:-}" == "update" ]]; then
   exit 2
 fi
 
-if ! curl -fsS --max-time 1 "\$gateway_url/health" >/dev/null 2>&1; then
+gateway_accepts_token() {
+  curl -fsS --max-time 2 \
+    -H "Authorization: Bearer \$proxy_token" \
+    "\$gateway_url/v1/models" >/dev/null 2>&1
+}
+
+prepare_local_kiro_credentials() {
+  if [[ -n "\${KIRO_API_KEY:-}" ]]; then
+    return 0
+  fi
+
+  local database_path="\${KIROCC_DB_PATH:-}"
+  if [[ -z "\$database_path" ]]; then
+    case "\$(uname -s)" in
+      Darwin) database_path="\$HOME/Library/Application Support/kiro-cli/data.sqlite3" ;;
+      Linux) database_path="\$HOME/.local/share/kiro-cli/data.sqlite3" ;;
+    esac
+  fi
+  if [[ -n "\$database_path" && -f "\$database_path" ]]; then
+    export KIROCC_DB_PATH="\$database_path"
+    return 0
+  fi
+
+  cat >&2 <<EOF
+claude-kiro: no usable Kiro credential source was found.
+Kiro CLI is only needed to create the login credential; traffic is sent by the
+kirocc gateway itself.
+
+Install/login Kiro CLI:
+  curl -fsSL https://cli.kiro.dev/install | bash
+  kiro-cli login
+  kiro-cli whoami
+
+Or export KIRO_API_KEY (and optionally KIRO_API_REGION) before launching.
+Expected database: \${database_path:-<no default for this OS>}
+EOF
+  exit 78
+}
+
+gateway_is_healthy=false
+if curl -fsS --max-time 1 "\$gateway_url/health" >/dev/null 2>&1; then
+  gateway_is_healthy=true
+  if ! gateway_accepts_token; then
+    echo "claude-kiro: a gateway is already running at \$gateway_url but rejects the current KIROCC_API_KEY" >&2
+    echo "Use the matching local proxy key or choose an unused port, for example: KIROCC_PORT=3458 claude-kiro" >&2
+    exit 1
+  fi
+fi
+
+if [[ "\$gateway_is_healthy" != true ]]; then
+  prepare_local_kiro_credentials
   "\$kirocc_bin" -port "\$gateway_port" >"\$log_file" 2>&1 &
   started_pid=\$!
   ready=false
@@ -273,6 +378,10 @@ if ! curl -fsS --max-time 1 "\$gateway_url/health" >/dev/null 2>&1; then
   if [[ "\$ready" != true ]]; then
     echo "claude-kiro: gateway failed to start; log follows" >&2
     tail -n 40 "\$log_file" >&2 2>/dev/null || true
+    exit 1
+  fi
+  if ! gateway_accepts_token; then
+    echo "claude-kiro: gateway started but rejected the configured local proxy key" >&2
     exit 1
   fi
 fi
