@@ -6,6 +6,8 @@ pre-release tags based on the upstream kirocc version.
 
 ## [Unreleased]
 
+## [v0.6.0-clawgod.1] - 2026-08-03
+
 ### Added
 
 - An isolated `claude-kiro` launcher and configuration profile that use the
@@ -45,4 +47,5 @@ pre-release tags based on the upstream kirocc version.
 - In-place `claude-kiro update` is blocked to preserve the isolated path and
   verified installer boundary.
 
-[Unreleased]: https://github.com/itututu/clawgod-kirocc/commits/main
+[Unreleased]: https://github.com/itututu/clawgod-kirocc/compare/v0.6.0-clawgod.1...HEAD
+[v0.6.0-clawgod.1]: https://github.com/itututu/clawgod-kirocc/releases/tag/v0.6.0-clawgod.1

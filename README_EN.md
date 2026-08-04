@@ -27,9 +27,9 @@ yet; it is not an installation error. This repository inherits the upstream
 kirocc release lineage through `v0.6.0`, so those upstream tags are not
 republished as releases of this fork.
 
-Fork releases use `v<upstream-version>-clawgod.<fork-number>`. The current first
-candidate is `v0.6.0-clawgod.1`; see the [Chinese-first release draft](docs/release-notes/NEXT.md)
-and use the source installation below until that candidate is published.
+Fork releases use `v<upstream-version>-clawgod.<fork-number>`. The first version
+is `v0.6.0-clawgod.1`; see the [Chinese-first release notes](docs/release-notes/v0.6.0-clawgod.1.md).
+Always use the source installation below for the complete managed profile.
 
 Release artifacts have a deliberately narrow boundary:
 

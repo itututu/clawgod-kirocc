@@ -22,9 +22,9 @@ Code runtime；只有用户主动选择时才安装 ClawGod。
 不是安装失败。仓库继承了上游 kirocc `v0.6.0` 及更早的版本线，因此本项目
 不会把这些上游 Tag 重新包装成自己的 Release。
 
-本项目使用独立版本号 `v<上游版本>-clawgod.<本项目序号>`，当前准备中的首个
-候选版本为 `v0.6.0-clawgod.1`，详见[中文优先的发布草稿](docs/release-notes/NEXT.md)。
-正式 Release 发布前，请按下文从源码安装。
+本项目使用独立版本号 `v<上游版本>-clawgod.<本项目序号>`。首个版本为
+`v0.6.0-clawgod.1`，详见[中文优先的发布说明](docs/release-notes/v0.6.0-clawgod.1.md)。
+受管理的完整配置请始终按下文从源码安装。
 
 需要注意 Release 的制品边界：
 
