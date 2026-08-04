@@ -1,30 +1,30 @@
-# Next fork release (planned)
+# 下一个分支预发布版本（计划）
 
-Candidate tag: `v0.6.0-clawgod.1`
+候选 Tag：`v0.6.0-clawgod.1`
 
-This document is a release draft. No tag or GitHub Release exists until the
-maintainer explicitly approves and pushes the candidate tag.
+这是中文优先的 Release 草稿。维护者明确确认并推送候选 Tag 之前，GitHub
+Releases 页面不会出现本项目发行版。
 
-## Highlights
+## 主要更新
 
-- Isolated `claude-kiro` launcher using official Claude Code by default, with
-  the official `claude` command and profile left untouched.
-- ClawGod v1.7.5 is a checksum-verified opt-in instead of a mandatory install.
-- Native Windows 11 x64 PowerShell installer, launcher, doctor, uninstall,
-  tests, and ZIP release artifacts.
-- Kiro-native WebSearch support for Claude Code's built-in Anthropic server
-  tool, including streaming and non-streaming responses.
-- Read-only installation diagnostics through `scripts/doctor.sh` and
-  `scripts/doctor.ps1`.
-- Complete English and Chinese setup, capability, architecture, security, and
-  troubleshooting documentation.
+- `claude-kiro` 默认使用官方 Claude Code runtime，且不修改官方 `claude`
+  命令和配置。
+- ClawGod v1.7.5 改为显式可选组件，并校验平台安装器 SHA-256。
+- 新增 Windows 11 x64 PowerShell 安装、启动、doctor、卸载、测试和 ZIP
+  Release 制品。
+- Claude Code 内置 WebSearch 改走 Kiro 原生 MCP，支持非流式与 SSE 流式
+  响应。
+- 提供 macOS/Linux `scripts/doctor.sh` 与 Windows `scripts/doctor.ps1` 只读
+  诊断工具。
+- GitHub 默认显示完整中文 README，同时保留完整英文说明。
 
-## Installation
+## 安装
 
-The GitHub release archives contain the standalone `kirocc` gateway binary
-(Windows uses ZIP; macOS/Linux use tar.gz).
-The managed profile must be installed from a source checkout. The repository
-does not redistribute Claude Code or generated ClawGod runtime files:
+GitHub Release 压缩包只包含独立 `kirocc` 网关二进制和公开文档：Windows
+使用 ZIP，macOS/Linux 使用 tar.gz。受管理的 `claude-kiro` 必须从源码安装，
+因为本项目不重新分发 Claude Code 或本机生成的 ClawGod runtime。
+
+macOS/Linux 默认安装：
 
 ```bash
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -33,25 +33,41 @@ cd clawgod-kirocc
 ./scripts/doctor.sh
 ```
 
-Add `--with-clawgod` only when the patched runtime is wanted. On Windows use
-`powershell.exe -NoProfile -ExecutionPolicy Bypass -File
-.\scripts\install.ps1`, optionally with `-WithClawGod`.
+Windows 默认安装：
 
-## Important boundaries
+```powershell
+git clone https://github.com/itututu/clawgod-kirocc.git
+Set-Location clawgod-kirocc
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+.\scripts\doctor.ps1
+```
 
-- ClawGod client-side patches do not bypass Kiro or Anthropic server-side
-  quota, authentication, billing, rate limits, regional availability, or model
-  authorization.
-- The project is not affiliated with Anthropic, Amazon, Kiro, d-kuro, or
-  ClawGod.
-- Generated runtime files, credentials, sessions, and provider data are not
-  release artifacts.
+默认不安装 ClawGod。只有需要 Patch runtime 时，macOS/Linux 添加
+`--with-clawgod`，Windows 添加 `-WithClawGod`。
 
-## Validation checklist
+## 重要边界
 
-- [ ] Local Go race tests, vet, shell syntax, JSON, and SVG validation pass.
-- [ ] GitHub CI passes on the exact release commit.
-- [ ] Clean-install isolation is rechecked on macOS arm64.
-- [ ] Linux archive extraction and `kirocc --help` are checked.
-- [ ] Windows ZIP extraction and `kirocc.exe --help` are checked.
-- [ ] Release notes are updated from this draft before the tag is pushed.
+- ClawGod 客户端 Patch 不能绕过 Kiro 或 Anthropic 服务端额度、鉴权、计费、
+  限流、地区可用性或模型授权。
+- 本项目与 Anthropic、Amazon、Kiro、d-kuro、ClawGod 均无隶属关系。
+- Release 不包含生成的 runtime、凭据、会话、Provider 数据或完整
+  `claude-kiro` 安装目录。
+- 仓库继承的上游 `v0.6.0` 及更早 Tag 不会被重新发布为本项目 Release。
+
+## English summary
+
+The first planned fork release is `v0.6.0-clawgod.1`. It adds a managed
+Windows 11 x64 profile, Kiro-native WebSearch, an official Claude Code runtime
+by default, and checksum-verified ClawGod as an explicit opt-in. Release
+archives contain only the standalone gateway and public documentation; clone
+the source for the managed `claude-kiro` installation.
+
+## 发布验证清单
+
+- [ ] 本地 Go race、vet、Shell、PowerShell、JSON 和 SVG 检查通过。
+- [ ] 候选提交对应的 GitHub Linux/Windows CI 全部通过。
+- [ ] macOS arm64 全新默认安装的隔离边界复核通过。
+- [ ] Linux 压缩包解压以及 `kirocc --help` 通过。
+- [ ] Windows ZIP 解压以及 `kirocc.exe --help` 通过。
+- [ ] 维护者确认候选版本号和发布操作。
+- [ ] 只推送单个 fork Tag，不使用 `git push --tags`。

@@ -1,92 +1,125 @@
 # ClawGod KiroCC
 
-[中文说明](README_ZH.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Upstream kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1)
+[English](README_EN.md) · [变更记录](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md) · [Releases](https://github.com/itututu/clawgod-kirocc/releases) · [上游 kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)
 
 [![CI](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml/badge.svg)](https://github.com/itututu/clawgod-kirocc/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![ClawGod](https://img.shields.io/badge/ClawGod-v1.7.5-16a34a.svg)](https://github.com/0Chencc/clawgod/releases/tag/v1.7.5)
+[![许可证](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![ClawGod 可选组件](https://img.shields.io/badge/ClawGod-v1.7.5%20可选-16a34a.svg)](https://github.com/0Chencc/clawgod/releases/tag/v1.7.5)
 
-An isolated Claude Code launch profile backed by Kiro credentials, with
-optional ClawGod patches and Kiro-native WebSearch support added to the excellent
-[kirocc](https://github.com/d-kuro/kirocc) gateway.
+这是一个公开、可审计的 Claude Code + Kiro CLI 集成版本，ClawGod 为显式
+可选组件。它在 kirocc 基础上补齐 Kiro 原生 WebSearch，并通过独立的
+`claude-kiro` 命令运行，不覆盖官方 `claude` 命令。默认直接使用官方 Claude
+Code runtime；只有用户主动选择时才安装 ClawGod。
 
-This downstream project keeps the official `claude` command untouched. It
-installs an explicit `claude-kiro` launcher, its own configuration directory,
-and a patched gateway on port `3457`. The default mode uses the official Claude
-Code runtime; ClawGod is installed only when explicitly selected.
+> 本项目与 Anthropic、Amazon、Kiro、d-kuro、ClawGod 均无隶属关系。
+> 仓库不包含 Claude Code 二进制、提取源码、私有内置系统提示词、账号凭据、
+> 会话历史或本机生成的 ClawGod runtime。
 
-> This project is not affiliated with Anthropic, Amazon, Kiro, d-kuro, or
-> ClawGod. It does not contain Claude Code binaries, extracted source, private
-> system prompts, credentials, or generated ClawGod files.
+## 下载与 Releases
 
-## Community
+[Releases 页面](https://github.com/itututu/clawgod-kirocc/releases)如果显示
+“There aren’t any releases here”，表示本项目的首个 fork 版本尚未正式发布，
+不是安装失败。仓库继承了上游 kirocc `v0.6.0` 及更早的版本线，因此本项目
+不会把这些上游 Tag 重新包装成自己的 Release。
 
-Join the public [Telegram community](https://t.me/+y-jOB2WmYGo2YjQ1) for setup
-discussion and release feedback. Never post Kiro credentials, API tokens,
-provider files, or Claude session logs.
+本项目使用独立版本号 `v<上游版本>-clawgod.<本项目序号>`，当前准备中的首个
+候选版本为 `v0.6.0-clawgod.1`，详见[中文优先的发布草稿](docs/release-notes/NEXT.md)。
+正式 Release 发布前，请按下文从源码安装。
 
-## Documentation map
+需要注意 Release 的制品边界：
 
-- [Why this fork exists](#why-this-fork-exists) and [comparison](#comparison)
-- [Optional ClawGod capabilities](#optional-clawgod-capabilities) and [prompt behavior](#prompt-behavior)
-- [Installation, verification, update, and uninstall](#installation-and-lifecycle)
-- [Features](#features), [gateway-only installation](#gateway-only-installation), and [usage](#usage)
-- [Endpoints](#endpoints), [architecture](#architecture), and feature deep dives
-- [Known limitations](#known-limitations), [troubleshooting](#troubleshooting), [security](#security-and-data-handling), and [validation status](#testing-and-validation-status)
+- Windows ZIP、macOS/Linux tar.gz 只包含独立 `kirocc` 网关及公开文档。
+- Release 不包含 Claude Code、ClawGod 生成文件、凭据、会话或完整
+  `claude-kiro` 安装目录。
+- 需要受管理的 `claude-kiro`、隔离配置或可选 ClawGod 时，仍需克隆源码并
+  运行 `scripts/install.sh` 或 `scripts/install.ps1`。
+- Release 发布状态和构建日志以 [GitHub Actions](https://github.com/itututu/clawgod-kirocc/actions)
+  为准；不要使用来源不明的二进制包。
 
-## Why this fork exists
+## 交流群
 
-Claude Code sends its built-in WebSearch as the Anthropic server tool
-`web_search_20250305`. Upstream kirocc v0.6.0 forwards that definition to Kiro's
-inference endpoint as an ordinary client tool, where it is rejected with an
-upstream schema error. This fork detects the native server tool and calls Kiro's
-regional MCP endpoint directly:
+安装交流和版本反馈：[加入 Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)。
+请勿在群内发送 Kiro 凭据、API Token、Provider 文件或 Claude 会话日志。
+
+## 文档导航
+
+- [下载与 Releases](#下载与-releases)
+- [问题背景](#解决的问题)和[版本对比](#版本对比图)
+- [可选 ClawGod 功能](#可选的-clawgod-功能)和[提示词行为](#clawgod-内置提示词能否继续使用)
+- [安装、验证、更新和卸载](#安装与生命周期)
+- [主要功能](#主要功能)、[仅安装网关](#仅安装网关)和[使用方式](#使用方式)
+- [API](#api-endpoint)、[架构](#架构)和功能原理
+- [已知边界](#已知边界)、[排障](#排障)、[安全](#安全与数据处理)和[测试](#测试与验证状态)
+
+## 解决的问题
+
+Claude Code 内置 WebSearch 会发送 Anthropic server tool：
+
+```json
+{
+  "tools": [
+    {
+      "max_uses": 8,
+      "type": "web_search_20250305",
+      "name": "web_search"
+    }
+  ],
+  "tool_choice": {"type": "tool", "name": "web_search"}
+}
+```
+
+上游 kirocc v0.6.0 会把它当成普通客户端工具发送到 Kiro 推理接口，最终出现
+`TOOL_SCHEMA_INVALID`/502。本版本改为直接调用 Kiro 原生 MCP：
 
 ```text
 https://q.<region>.amazonaws.com/mcp
 ```
 
-The result is converted back to Anthropic-compatible `server_tool_use`,
-`web_search_tool_result`, text, usage, and SSE events. The result block carries
-the same `tool_use_id` as the server tool call.
+并返回 Claude Code 能识别的：
 
-## Comparison
+- `server_tool_use`
+- 带相同 `tool_use_id` 的 `web_search_tool_result`
+- `web_search_result`
+- 非流式 JSON 与完整 SSE 流式事件
+- `usage.server_tool_use.web_search_requests`
+- 403 凭据刷新以及 429/5xx 重试
 
-Verified snapshot: Claude Code 2.1.220, ClawGod 1.7.5, kirocc 0.6.0, and Kiro
-CLI 2.16.0 on macOS arm64 (2026-08-03).
+## 版本对比图
 
-The last comparison column describes the opt-in `--with-clawgod` profile. The
-default install keeps the same Kiro/WebSearch/isolation features without the
-ClawGod client patches.
+验证快照：Claude Code 2.1.220、ClawGod 1.7.5、kirocc 0.6.0、Kiro CLI
+2.16.0、macOS arm64，日期 2026-08-03。
 
-![ClawGod KiroCC comparison](docs/assets/comparison.svg)
+最后一列表示显式选择 `--with-clawgod` 后的完整 Patch 配置。默认安装仍包含
+Kiro、原生 WebSearch 和配置隔离，但不应用任何 ClawGod Patch。
 
-| Capability | Official Claude Code | ClawGod only | Upstream kirocc 0.6.0 | ClawGod KiroCC |
+![ClawGod KiroCC 版本对比](docs/assets/comparison.svg)
+
+| 能力 | 官方 Claude Code | 仅 ClawGod | 上游 kirocc 0.6.0 | 我们的 ClawGod KiroCC |
 | --- | :---: | :---: | :---: | :---: |
-| Official Claude Code tool/runtime behavior | ✅ | ✅ patched | ✅ via API adapter | ✅ default / patched opt-in |
-| Kiro CLI credential backend | — | — | ✅ | ✅ |
-| Extended thinking / native effort | Provider-dependent | Provider-dependent | ✅ | ✅ |
-| Anthropic Tool Search emulation | Provider-dependent | Provider-dependent | ✅ | ✅ |
-| Built-in WebSearch through Kiro MCP | — | — | ❌ schema 502 | ✅ |
-| Streaming WebSearch contract | Provider-dependent | Provider-dependent | ❌ | ✅ |
-| Native Windows 11 x64 managed profile | ✅ | ✅ | Manual gateway | ✅ |
-| Separate command and config profile | Native profile | Replaces/aliases launcher by default | Manual | ✅ `claude-kiro` |
-| Leaves the official `claude` path untouched by this installer | ✅ | ❌ by default | ✅ | ✅ |
-| Search MCP fallback can coexist | Manual | Manual | Manual | ✅ |
-| ClawGod client-side feature unlocks and restriction patches | — | ✅ | — | ✅ opt-in |
-| Bypasses provider-side quota, auth, billing, or model access | ❌ | ❌ | ❌ | ❌ |
+| Claude Code 原生工具和运行时 | ✅ | ✅ 已 Patch | ✅ 经协议适配 | ✅ 默认官方 / 可选 Patch |
+| 使用 Kiro CLI 订阅/凭据 | — | — | ✅ | ✅ |
+| 原生 effort/扩展思考 | 取决于官方账号 | 取决于 Provider | ✅ | ✅ |
+| Anthropic Tool Search 模拟 | 取决于官方接口 | 取决于 Provider | ✅ | ✅ |
+| 内置 WebSearch 走 Kiro MCP | — | — | ❌ 502 | ✅ |
+| WebSearch 非流式与 SSE 流式 | 官方支持 | 取决于 Provider | ❌ | ✅ |
+| Windows 11 x64 原生受管理配置 | ✅ | ✅ | 仅手工网关 | ✅ |
+| 单独命令、配置和端口 | 官方配置 | 默认会替换/别名启动器 | 需手工配置 | ✅ |
+| 本安装器不改官方 `claude` 路径 | ✅ | ❌ 默认安装行为 | ✅ | ✅ |
+| DuckDuckGo 等搜索 MCP 作为备用 | 手工 | 手工 | 手工 | ✅ 可共存 |
+| ClawGod 客户端功能解锁和限制移除 Patch | — | ✅ | — | ✅ 可选 |
+| 绕过服务端额度、鉴权、计费或模型权限 | ❌ | ❌ | ❌ | ❌ |
 
 ```mermaid
 flowchart LR
-    Official["Official claude command<br/>untouched"]
-    Launcher["claude-kiro<br/>isolated config"]
-    OfficialRuntime["Official Claude runtime<br/>default"]
-    ClawGod["ClawGod runtime<br/>optional patches"]
-    Gateway["patched kirocc<br/>localhost:3457"]
-    Runtime["Kiro inference<br/>runtime.region.kiro.dev"]
-    Search["Kiro native WebSearch<br/>q.region.amazonaws.com/mcp"]
+    Official["官方 claude<br/>保持不变"]
+    Launcher["claude-kiro<br/>独立配置"]
+    OfficialRuntime["官方 Claude runtime<br/>默认"]
+    ClawGod["ClawGod runtime<br/>可选 Patch"]
+    Gateway["patched kirocc<br/>127.0.0.1:3457"]
+    Runtime["Kiro 推理接口<br/>runtime.region.kiro.dev"]
+    Search["Kiro 原生搜索<br/>q.region.amazonaws.com/mcp"]
 
-    Official -. "separate" .- Launcher
+    Official -. "互不覆盖" .- Launcher
     Launcher --> OfficialRuntime
     Launcher --> ClawGod
     OfficialRuntime --> Gateway
@@ -95,70 +128,75 @@ flowchart LR
     Gateway --> Search
 ```
 
-## Optional ClawGod capabilities
+## 可选的 ClawGod 功能
 
-Run the installer with `--with-clawgod` (PowerShell: `-WithClawGod`) to install
-the pinned ClawGod v1.7.5 runtime patch with Lean mode off. Without that option,
-`claude-kiro` uses the official Claude Code runtime and none of the patch groups
-in this section are applied.
+使用 `--with-clawgod`（Windows 为 `-WithClawGod`）才会安装锁定的 ClawGod
+v1.7.5 runtime patch，并关闭 Lean 模式。未选择该参数时，`claude-kiro`
+直接使用官方 Claude Code runtime，本节所有 Patch 均不会应用。
 
-| ClawGod patch group | Included behavior in `claude-kiro` |
+| ClawGod Patch 类别 | `claude-kiro` 中包含的能力 |
 | --- | --- |
-| Feature unlocks | Internal User Mode and hidden commands, GrowthBook flag overrides, Agent Teams, third-party Auto-mode, and the client gates for Computer Use, Ultraplan, and Ultrareview |
-| Restriction removals | Removes ClawGod's documented client-injected cyber-risk refusal, URL-generation restriction, cautious-action confirmation, and login notice instructions |
-| Geo neutralization | Neutralizes the documented timezone/proxy/base-URL geo probe and Unicode-apostrophe selector |
-| Visual patches | Green ClawGod branding indicates the patched runtime; message filters expose content hidden from non-Anthropic providers |
-| Reliability patches | Restores Glob/Grep under the Bun runtime, enables the 1-hour prompt-cache allowlist, and applies the third-party billing-header cache fix |
-| Lean settings | Explicitly set to `off`; Plan mode, Agent Teams, bundled skills, Workflows, Remote Control, and Artifact are not removed by Lean mode |
+| 功能解锁 | Internal User Mode 和隐藏命令、GrowthBook 功能旗标覆盖、Agent Teams、第三方 Provider Auto-mode，以及 Computer Use、Ultraplan、Ultrareview 的客户端入口解锁 |
+| 限制移除 | 移除 ClawGod 文档列出的客户端安全测试拒绝提示、URL 生成限制、谨慎操作强制确认和未登录提示 |
+| 地区检测中和 | 中和其文档列出的时区/代理/Base URL 地区探针和 Unicode 撇号选择器 |
+| 视觉 Patch | 绿色 ClawGod 品牌色表示正在运行 Patch 版本；消息过滤 Patch 会显示原本对非 Anthropic Provider 隐藏的内容 |
+| 可靠性 Patch | Bun runtime 下恢复 Glob/Grep、启用 1 小时 Prompt Cache allowlist、修复第三方 Provider billing header 导致的缓存命中问题 |
+| Lean 设置 | 明确设为 `off`；不会由 Lean 模式删除 Plan mode、Agent Teams、内置 Skills、Workflows、Remote Control 或 Artifact |
 
-The ClawGod patch bodies and generated `cli.cjs` are intentionally not vendored
-in this repository. [`scripts/install.sh`](scripts/install.sh) downloads the
-pinned v1.7.5 installer, verifies its SHA-256, applies only the isolation-path
-overrides in a temporary directory, and generates the runtime locally. GitHub
-therefore shows the auditable integration and isolation code, while extracted
-Claude Code source and generated runtime artifacts stay off Git.
+仓库有意不提交 ClawGod Patch 本体、生成的 `cli.cjs` 或提取出的 Claude Code
+源码。[`scripts/install.sh`](scripts/install.sh) 会下载锁定的 v1.7.5 installer、
+校验 SHA-256、只在临时目录加入隔离路径覆盖，然后在用户本机生成 runtime。
+因此 GitHub 显示的是可审计的集成和隔离代码，生成运行时不会进入 Git。
 
-Here, **unlock** or **restriction removal** means a patch to checks, feature
-flags, or instructions implemented in the local Claude Code client. It does
-**not** create extra Kiro or Anthropic quota, bypass server authentication,
-billing, rate limits, subscription enforcement, regional service availability,
-or model authorization. Computer Use and Remote-backed features still depend on
-the local platform and the selected backend. Removing cautious-action prompts
-also does not grant permission for destructive or unauthorized activity; review
-commands before execution.
+这里的“解锁”或“绕过限制”指修改本地 Claude Code 客户端中的检查、功能旗标或
+注入提示，**不代表**可以增加 Kiro/Anthropic 服务端额度，也不能绕过服务端鉴权、
+计费、限流、订阅校验、地区服务可用性或模型权限。Computer Use 和依赖 Remote
+的功能仍取决于本机平台及所用后端。移除谨慎操作提示也不等于获得执行破坏性或
+未授权操作的许可，运行命令前仍需自行确认。
 
-Compared with stock ClawGod, this project deliberately does not replace the
-official `claude` launcher. In-place `claude-kiro update` is blocked so every
-refresh keeps the isolated paths and checksum verification; use
-`./scripts/install.sh --refresh-clawgod` instead.
+与原版 ClawGod 不同，本项目不会替换官方 `claude` 启动器，并禁止
+`claude-kiro update` 原地更新，以防破坏隔离路径和校验边界。更新请运行：
 
-## Prompt behavior
+```bash
+./scripts/install.sh --refresh-clawgod
+```
 
-When selected, ClawGod still runs Claude Code's built-in system-prompt pipeline. This project
-does not copy or publish that proprietary prompt. The isolated profile adds the
-original, auditable [`config/CLAUDE.md`](config/CLAUDE.md) after the built-in
-instructions to describe WebSearch routing, source-link expectations, update
-isolation, credential hygiene, and verification rules.
+## ClawGod 内置提示词能否继续使用
 
-## Installation and lifecycle
+选择 ClawGod 后可以。ClawGod 仍然运行 Claude Code 自带的系统提示链和 runtime patch；KiroCC
+只替换 Anthropic API 的后端地址，不会移除这条提示链。
 
-### Prerequisites
+但官方 Claude Code 内置系统提示词属于专有内容，本仓库不会把从 `cli.cjs` 中
+提取出的提示词复制到 GitHub。公开版使用原创、可审计的
+[`config/CLAUDE.md`](config/CLAUDE.md) 作为附加提示，负责：
 
-- macOS, Linux, or native Windows 11 x64
-- Go 1.26+ and Node.js 18+
-- Kiro CLI installed and logged in, or a Kiro API key and region
-- an official Claude Code installation (used locally; never copied into this repository)
-- macOS/Linux: curl
-- optional ClawGod mode only: Bun 1.3.14+, ripgrep, and either `shasum` or `sha256sum`
-- the per-user `.local/bin` directory on `PATH` (the Windows installer adds it)
+- 优先使用 Kiro 原生 WebSearch
+- 搜索答案提供来源链接
+- 搜索失败时允许显式配置的 MCP 备用
+- 保护官方 Claude Code 安装和更新边界
+- 禁止提交凭据、Provider 文件和会话历史
+- 要求测试和诚实报告真实联网验收边界
 
-Kiro CLI's native Windows distribution currently targets Windows 11 x64.
-Standalone KiroCC release binaries may run elsewhere, but that does not prove
-the complete authenticated profile is supported there.
+这份 `CLAUDE.md` 是附加规则，不冒充、复制或替换官方内置提示词。
 
-### Default install: official Claude Code runtime
+## 安装与生命周期
 
-macOS/Linux:
+### 依赖
+
+- macOS、Linux，或原生 Windows 11 x64
+- Go 1.26+、Node.js 18+
+- 已安装并登录的 Kiro CLI，或可用的 Kiro API Key 和 Region
+- 官方 Claude Code（只在用户本机使用，不会进入仓库）
+- macOS/Linux 需要 curl
+- 只有选择 ClawGod 时才需要 Bun 1.3.14+、ripgrep，以及 `shasum` 或 `sha256sum` 之一
+- 用户级 `.local/bin` 已加入 `PATH`（Windows 安装器会自动加入）
+
+Kiro CLI 的原生 Windows 版本当前面向 Windows 11 x64。单独的 KiroCC
+二进制可能能在更多系统运行，但这不等于完整认证配置已得到支持。
+
+### 默认安装：官方 Claude Code runtime
+
+macOS/Linux：
 
 ```bash
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -167,7 +205,7 @@ cd clawgod-kirocc
 claude-kiro
 ```
 
-Windows PowerShell:
+Windows PowerShell：
 
 ```powershell
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -176,52 +214,56 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 claude-kiro
 ```
 
-The default installer builds the patched gateway and creates an isolated
-`claude-kiro` profile around the already-installed official Claude Code runtime.
-It does not download ClawGod and does not create, replace, rename, or delete the
-official `claude` command.
+默认安装器只编译 KiroCC 网关，并围绕本机已有的官方 Claude Code 创建独立
+`claude-kiro` 配置；不会下载 ClawGod，也不会创建、替换、重命名或删除官方
+`claude` 命令。
 
-### Opt in to ClawGod
+### 可选安装 ClawGod
 
-macOS/Linux:
+macOS/Linux：
 
 ```bash
 ./scripts/install.sh --with-clawgod
 ```
 
-Windows PowerShell:
+Windows PowerShell：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -WithClawGod
 ```
 
-Opt-in mode downloads the pinned ClawGod v1.7.5 installer, verifies its
-platform-specific SHA-256, patches only the temporary installer copy with
-isolation overrides, and generates ClawGod locally. The pinned installer hashes
-are:
+选择后安装器会：
 
-- macOS/Linux `install.sh`: `4a943439ae8cb858e69279d19f0d3a979968fc0a9e4c42e1d1018ae76657ce82`
-- Windows `install.ps1`: `bf2a9947f5f5747ceaf0ebc77f8f0c66887a2c390e7e996c28b6c72b5b579d3e`
+1. 编译带原生 WebSearch 的 kirocc。
+2. 下载锁定的 ClawGod v1.7.5 installer。
+3. 校验 installer SHA-256：
+   `4a943439ae8cb858e69279d19f0d3a979968fc0a9e4c42e1d1018ae76657ce82`。
+4. 仅在临时目录给 installer 增加隔离路径参数。
+5. 把生成的 ClawGod runtime 放入独立目录。
+6. 创建独立状态、Claude 配置和 `claude-kiro` 启动器。
 
-### Installed layout
+Windows `install.ps1` 的锁定 SHA-256 为
+`bf2a9947f5f5747ceaf0ebc77f8f0c66887a2c390e7e996c28b6c72b5b579d3e`。
+两个平台都只修改临时下载的安装器副本，不把生成 runtime 提交到 Git。
 
-| Purpose | macOS/Linux | Windows |
+### 安装目录
+
+| 用途 | macOS/Linux | Windows |
 | --- | --- | --- |
-| Explicit launcher | `~/.local/bin/claude-kiro` | `%USERPROFILE%\.local\bin\claude-kiro.cmd` |
-| Patched gateway | `~/.local/share/clawgod-kirocc/bin/kirocc-native-websearch` | `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\bin\kirocc-native-websearch.exe` |
-| Optional ClawGod files | `~/.local/share/clawgod-kirocc/clawgod/` | `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\clawgod\` |
-| Isolated state | `~/.clawgod-kirocc/` | `%USERPROFILE%\.clawgod-kirocc\` |
-| Isolated Claude config | `~/.clawgod-kirocc/claude-config/` | `%USERPROFILE%\.clawgod-kirocc\claude-config\` |
-| Gateway logs | `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-*` | `%TEMP%\clawgod-kirocc-gateway-*` |
+| 独立启动器 | `~/.local/bin/claude-kiro` | `%USERPROFILE%\.local\bin\claude-kiro.cmd` |
+| KiroCC 网关 | `~/.local/share/clawgod-kirocc/bin/kirocc-native-websearch` | `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\bin\kirocc-native-websearch.exe` |
+| 可选 ClawGod | `~/.local/share/clawgod-kirocc/clawgod/` | `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\clawgod\` |
+| 独立状态 | `~/.clawgod-kirocc/` | `%USERPROFILE%\.clawgod-kirocc\` |
+| Claude 配置 | `~/.clawgod-kirocc/claude-config/` | `%USERPROFILE%\.clawgod-kirocc\claude-config\` |
+| 网关日志 | `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-*` | `%TEMP%\clawgod-kirocc-gateway-*` |
 
-The default launcher port is `3457`; standalone `kirocc` defaults to `3456`.
-If a healthy gateway already answers at `KIROCC_URL`, the launcher reuses it.
-Otherwise it starts one for the lifetime of the `claude-kiro` process and stops
-that child gateway on exit.
+`claude-kiro` 管理的默认端口为 `3457`；单独运行 `kirocc` 的默认端口为
+`3456`。如果 `KIROCC_URL` 已有健康网关，启动器会直接复用；否则会启动一个
+子进程，并在 `claude-kiro` 退出时清理该子进程。
 
-### Verify the installation
+### 验证安装与隔离
 
-macOS/Linux:
+macOS/Linux：
 
 ```bash
 ./scripts/doctor.sh
@@ -231,7 +273,7 @@ claude --version
 claude-kiro --version
 ```
 
-Windows PowerShell:
+Windows PowerShell：
 
 ```powershell
 .\scripts\doctor.ps1
@@ -241,57 +283,57 @@ claude --version
 claude-kiro --version
 ```
 
-The doctor is read-only: it does not print credentials, modify configuration,
-start Claude Code, or start/stop the gateway. A gateway-health warning is
-normal while `claude-kiro` is closed. Use `./scripts/doctor.sh --strict` in
-automation when warnings should also produce a non-zero exit status.
+诊断脚本完全只读：不会输出凭据、修改配置、启动 Claude Code，也不会启停网关。
+`claude-kiro` 关闭时出现“网关不可达”警告属于正常情况。自动化环境若希望任何
+警告都返回非零状态，可使用 `./scripts/doctor.sh --strict`。
 
-The two command paths must be different. In the default mode both commands use
-the official runtime, but only `claude-kiro` uses the isolated Kiro-backed
-profile. Green ClawGod branding appears only after selecting ClawGod. A version
-command can exit before there is time to inspect
-the managed health endpoint, so check `http://127.0.0.1:3457/health` only while
-an interactive `claude-kiro` session is open.
+两个命令路径必须不同。默认模式下二者都使用官方 runtime，但只有
+`claude-kiro` 使用 Kiro 后端和独立配置；绿色品牌色只在选择 ClawGod 后出现。
+`--version` 很快退出，
+启动器也会同步关闭临时网关；仅在交互会话打开期间检查：
 
-### Installer options and overrides
+```bash
+curl http://127.0.0.1:3457/health
+```
+
+### 安装参数和覆盖变量
 
 ```text
 ./scripts/install.sh [--with-clawgod] [--refresh-clawgod] [--gateway-only]
 .\scripts\install.ps1 [-WithClawGod] [-RefreshClawGod] [-GatewayOnly]
 ```
 
-| Option or variable | Purpose |
+| 参数或变量 | 作用 |
 | --- | --- |
-| `--with-clawgod` / `-WithClawGod` | Opt in to the pinned isolated ClawGod runtime |
-| `--refresh-clawgod` / `-RefreshClawGod` | Rebuild ClawGod and implicitly select it |
-| `--gateway-only` / `-GatewayOnly` | Legacy advanced mode around an explicit `CLAWGOD_BIN`; implicitly selects ClawGod |
-| `CLAWGOD_BIN` | Existing explicit ClawGod launcher used by gateway-only mode |
-| `CLAWGOD_RELEASE` | ClawGod release tag; defaults to `v1.7.5` |
-| `CLAWGOD_INSTALLER_SHA256` | Required expected checksum when changing the release tag |
-| `CLAUDE_KIRO_RUNTIME_BIN` | Override the runtime used by `claude-kiro` without changing official `claude` |
-| `CLAWGOD_KIROCC_INSTALL_ROOT` | Runtime root; defaults to the OS-specific path above |
-| `CLAWGOD_KIROCC_STATE_ROOT` | State root; defaults to `~/.clawgod-kirocc` |
-| `CLAWGOD_KIROCC_BIN_DIR` | Launcher directory; defaults to `~/.local/bin` |
-| `KIROCC_PORT` | Managed gateway port; defaults to `3457` |
+| `--with-clawgod` / `-WithClawGod` | 显式选择锁定的隔离 ClawGod runtime |
+| `--refresh-clawgod` / `-RefreshClawGod` | 重新生成并自动选择 ClawGod |
+| `--gateway-only` / `-GatewayOnly` | 兼容旧高级用法，围绕显式 `CLAWGOD_BIN` 安装并自动选择 ClawGod |
+| `CLAWGOD_BIN` | gateway-only 模式使用的现有 ClawGod 启动器 |
+| `CLAWGOD_RELEASE` | ClawGod Release Tag，默认 `v1.7.5` |
+| `CLAWGOD_INSTALLER_SHA256` | 更换 Release 时必须提供的预期校验值 |
+| `CLAUDE_KIRO_RUNTIME_BIN` | 覆盖 `claude-kiro` 使用的官方或 Patch runtime |
+| `CLAWGOD_KIROCC_INSTALL_ROOT` | runtime 根目录，使用上表所示 OS 默认值 |
+| `CLAWGOD_KIROCC_STATE_ROOT` | 状态根目录，默认 `~/.clawgod-kirocc` |
+| `CLAWGOD_KIROCC_BIN_DIR` | 启动器目录，默认 `~/.local/bin` |
+| `KIROCC_PORT` | 启动器管理的网关端口，默认 `3457` |
 
-Example using an existing isolated ClawGod executable:
+如果已有独立 ClawGod：
 
 ```bash
-CLAWGOD_BIN=/absolute/path/to/clawgod ./scripts/install.sh --gateway-only
+CLAWGOD_BIN=/绝对路径/clawgod ./scripts/install.sh --gateway-only
 ```
 
-### Update and uninstall
+### 更新与卸载
 
-`claude-kiro update` is intentionally blocked because upstream self-update
-would escape the checksum and isolation boundary. Update through this repository:
+`claude-kiro update` 被有意禁用，防止上游自更新绕开校验和隔离边界。更新方式：
 
 ```bash
 git pull --ff-only
-./scripts/install.sh                    # default official-runtime mode
-./scripts/install.sh --refresh-clawgod # selected ClawGod mode
+./scripts/install.sh                    # 默认官方 runtime
+./scripts/install.sh --refresh-clawgod # 已选择 ClawGod
 ```
 
-Windows PowerShell:
+Windows PowerShell：
 
 ```powershell
 git pull --ff-only
@@ -299,50 +341,42 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -RefreshClawGod
 ```
 
-Run only the last command when the selected runtime is ClawGod.
+只有当前选择 ClawGod runtime 时才运行最后一条。
 
-Remove binaries while preserving the isolated state:
+卸载但保留配置和会话状态：
 
 ```bash
 ./scripts/uninstall.sh
 ```
 
-Delete the isolated configuration, projects, and session state as well:
+同时删除独立状态：
 
 ```bash
 ./scripts/uninstall.sh --purge-state
 ```
 
-Windows equivalents are `.\scripts\uninstall.ps1` and
-`.\scripts\uninstall.ps1 -PurgeState`.
+Windows 对应命令为 `.\scripts\uninstall.ps1` 和
+`.\scripts\uninstall.ps1 -PurgeState`。
 
-## Features
+## 主要功能
 
-- **Anthropic Messages API compatible** — Supports `/v1/messages` (streaming / non-streaming), `/v1/messages/count_tokens`, and `/v1/models`
-- **Request conversion** — Automatically converts Anthropic API requests to Kiro API (AWS Event Stream) format
-- **Response conversion** — Converts Kiro event streams back to Anthropic SSE format
-- **Automatic auth management** — Reads and refreshes Kiro CLI SQLite credentials (Social/OIDC), or uses an explicit Kiro API key and region
-- **Model mapping** — Maps Anthropic model names (e.g., `claude-sonnet-4-6`) to Kiro model names. Customizable via environment variable
-- **Extended Thinking** — Enable via the `[1m]` suffix, the `thinking` field, or `output_config.effort`. Reasoning depth travels natively as `additionalModelRequestFields.output_config.effort` (validated against each model's enum; defaults to `medium` for effort-capable models when thinking is on without an explicit effort)
-- **Tool Search** — Proxy-side implementation of Anthropic's [Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool). Supports `tool_search_tool_regex_20251119` and `tool_search_tool_bm25_20251119` with `defer_loading` for on-demand tool discovery
-- **Kiro-native WebSearch** — Executes Claude Code's `web_search_20250305` through Kiro MCP with paired Anthropic result blocks, streaming SSE, retry, token counting, and server-tool usage
-- **Isolated runtime profile** — Dedicated `claude-kiro` command, state, config, gateway binary, port, and update boundary around official Claude Code by default, with ClawGod as an explicit opt-in; official `claude` is not modified
-- **Prompt Caching** — Converts Anthropic tool-level `cache_control` to Kiro `cachePoint`
-- **Truncation detection** — Automatically injects a notice into the next request when a response is truncated
-- **Retry** — Exponential backoff retry for 403 (token expiry), 429, and 5xx errors. Also retries thinking-only (empty visible) responses
-- **SSE keep-alive** — Sends an idle comment heartbeat every 15 seconds by default; configurable or disableable
-- **API key auth** — Optional access restriction for the proxy itself
-- **CORS** — Allows requests from localhost origins
-- **File logging** — Write structured logs (OTel JSON Lines) to a rotating file via [lumberjack](https://github.com/natefinch/lumberjack). Defaults optimized for coding agent consumption (10 MB, uncompressed)
-- **OpenTelemetry tracing** — Opt-in distributed tracing via `--otel` with OTLP HTTP exporter. Captures request/response headers and body as span events across the full proxy chain
+- **Anthropic Messages API 兼容**：支持 `/v1/messages`（流式/非流式）、`/v1/messages/count_tokens` 和 `/v1/models`。
+- **请求/响应协议转换**：Anthropic JSON/SSE 与 Kiro JSON/AWS Event Stream 双向转换。
+- **自动认证管理**：读取 Kiro CLI SQLite 凭据并自动刷新 Social/OIDC Token，也支持 Kiro API Key。
+- **模型映射**：将 Anthropic 风格模型名映射为 Kiro SKU，可通过环境变量覆盖。
+- **扩展思考**：支持 `[1m]`、`thinking` 和 `output_config.effort`，原生转发并按模型枚举校验/收敛 effort。
+- **Tool Search**：在代理侧实现 regex/BM25 Tool Search 和 `defer_loading` 按需工具发现。
+- **Kiro 原生 WebSearch**：把 `web_search_20250305` 映射到 Kiro MCP，支持 JSON、SSE、重试、Token Count 和 server-tool usage。
+- **隔离 runtime 配置**：默认围绕官方 Claude Code 提供独立命令、状态、配置、网关、端口和更新边界；ClawGod 为显式可选，不修改官方 `claude`。
+- **Prompt Cache**：把 Anthropic 工具级 `cache_control` 转换为 Kiro `cachePoint`。
+- **截断检测与重试**：记录截断结果；对 403、429、5xx 和仅含 thinking 的空可见响应重试。
+- **SSE Keep-alive**：默认每 15 秒为长时间无输出的流发送注释心跳。
+- **本地代理鉴权/CORS**：可设置代理 API Key，并允许 localhost 来源。
+- **日志与 OpenTelemetry**：支持轮转 JSON Lines 日志和 OTLP HTTP 全链路追踪。
 
-## Gateway-only installation
+## 仅安装网关
 
-Use this path when you want only the Anthropic-compatible gateway without the
-managed `claude-kiro` profile. It requires Go 1.26+ and either a logged-in
-[Kiro CLI](https://kiro.dev) or a Kiro API key.
-
-### Build the standalone gateway
+如果只需要 Anthropic → Kiro 网关，不需要受管理的 `claude-kiro` 配置：
 
 ```bash
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -350,46 +384,41 @@ cd clawgod-kirocc
 GOEXPERIMENT=jsonv2 go build -trimpath -o ./dist/kirocc ./cmd/kirocc
 ```
 
-The Go module path intentionally remains `github.com/d-kuro/kirocc` to retain
-upstream compatibility and attribution. Use the source build above or release
-binaries instead of `go install` from the fork URL.
+Go module 路径保留为 `github.com/d-kuro/kirocc`，用于兼容上游和保留归属。
+请使用上述源码构建或 Release 二进制，不要对 Fork URL 直接执行 `go install`。
 
-## Usage
+## 使用方式
 
-### Isolated `claude-kiro` launcher
-
-Normal use needs only:
+### 使用隔离的 `claude-kiro`
 
 ```bash
 claude-kiro
 ```
 
-The launcher sets the isolated `CLAUDE_CONFIG_DIR`, points
-`ANTHROPIC_BASE_URL` at the gateway, clears conflicting Anthropic/Bedrock/
-Vertex/Foundry provider variables, and forwards every argument to the selected
-runtime: official Claude Code by default or ClawGod when explicitly installed.
+启动器会设置独立 `CLAUDE_CONFIG_DIR`，把 `ANTHROPIC_BASE_URL` 指向本地网关，
+清除可能冲突的 Anthropic/Bedrock/Vertex/Foundry Provider 变量，然后把全部参数
+转交给已选择的 runtime：默认是官方 Claude Code，显式安装后才是 ClawGod。
 
-Runtime overrides:
+运行时覆盖变量：
 
-| Variable | Purpose |
+| 变量 | 作用 |
 | --- | --- |
-| `KIROCC_BIN` | Alternate patched gateway executable |
-| `CLAUDE_KIRO_RUNTIME_BIN` | Alternate official or patched runtime executable |
-| `CLAWGOD_BIN` | Compatibility alias for an alternate ClawGod executable |
-| `CLAUDE_KIRO_CONFIG_DIR` / `CLAWGOD_KIROCC_CONFIG_DIR` | Alternate isolated Claude configuration directory |
-| `KIROCC_PORT` | Port used when the launcher starts its own gateway |
-| `KIROCC_URL` | Reuse an existing gateway URL instead of the default `http://127.0.0.1:$KIROCC_PORT` |
-| `KIROCC_API_KEY` | Protect the gateway and use the same value as Claude's local proxy token |
+| `KIROCC_BIN` | 指定另一个带 Patch 的网关二进制 |
+| `CLAUDE_KIRO_RUNTIME_BIN` | 指定另一个官方或 Patch runtime |
+| `CLAWGOD_BIN` | 指定 ClawGod runtime 的兼容别名 |
+| `CLAUDE_KIRO_CONFIG_DIR` / `CLAWGOD_KIROCC_CONFIG_DIR` | 指定另一个独立 Claude 配置目录 |
+| `KIROCC_PORT` | 启动器自行启动网关时使用的端口 |
+| `KIROCC_URL` | 复用已有网关 URL，替代默认 `http://127.0.0.1:$KIROCC_PORT` |
+| `KIROCC_API_KEY` | 保护本地网关，并作为 Claude 访问本地代理的 Token |
 
-### Start the standalone gateway
+### 单独启动网关
 
 ```bash
 ./dist/kirocc
 ```
 
-Listens on `http://127.0.0.1:3456` by default.
-
-### Use with Claude Code
+默认监听 `http://127.0.0.1:3456`。让官方 Claude Code 或其他 Anthropic
+Messages API 客户端使用这个网关：
 
 ```bash
 export ANTHROPIC_BASE_URL=http://127.0.0.1:3456
@@ -397,347 +426,293 @@ export ANTHROPIC_AUTH_TOKEN=dummy
 claude
 ```
 
-`ANTHROPIC_AUTH_TOKEN` is required by Claude Code but not used for authentication by kirocc (credentials are read from Kiro CLI's DB). Any non-empty value works unless `-api-key` is set.
+未设置 `-api-key`/`KIROCC_API_KEY` 时，`ANTHROPIC_AUTH_TOKEN` 只需非空；
+kirocc 的上游凭据来自 Kiro CLI 数据库或 `KIRO_API_KEY`。
 
-### Kiro authentication modes
+### Kiro 认证模式
 
-The gateway supports two mutually exclusive upstream credential sources:
+网关支持两种互斥的上游凭据来源：
 
-1. **Kiro CLI database (default):** reads the OS-specific SQLite database and
-   refreshes Social/OIDC credentials automatically.
-2. **Kiro API key:** set `KIRO_API_KEY=ksk_...` and optionally
-   `KIRO_API_REGION` (default `us-east-1`), or pass `-kiro-api-key` and
-   `-kiro-api-region`. This bypasses the local Kiro CLI database, not Kiro's
-   server-side authorization or quota checks.
+1. **Kiro CLI 数据库（默认）**：读取系统对应的 SQLite 数据库并自动刷新
+   Social/OIDC 凭据。
+2. **Kiro API Key**：设置 `KIRO_API_KEY=ksk_...`，可选
+   `KIRO_API_REGION`（默认 `us-east-1`）；也可使用 `-kiro-api-key` 和
+   `-kiro-api-region`。这只是不读取本地 Kiro CLI 数据库，并不绕过 Kiro
+   服务端鉴权或额度。
 
-`KIROCC_API_KEY` is different: it protects access to the **local proxy**. It is
-not a Kiro credential.
+`KIROCC_API_KEY` 是本地代理访问密码，不是 Kiro 凭据。
 
-### Command-line options
+### 命令行选项
 
-| Flag               | Default                   | Description                                                        |
-| ------------------ | ------------------------- | ------------------------------------------------------------------ |
-| `-port`            | `3456`                    | Listen port                                                        |
-| `-host`            | `127.0.0.1`               | Bind host                                                          |
-| `-db`              | (OS-dependent, see below) | Kiro CLI SQLite DB path                                            |
-| `-api-key`         | (none)                    | API key required to access the proxy                               |
-| `-kiro-api-key`    | (none)                    | Kiro `ksk_...` key instead of the Kiro CLI database credential     |
-| `-kiro-api-region` | `us-east-1`               | Region used with Kiro API-key authentication                       |
-| `-debug`           | `false`                   | Enable debug logging                                               |
-| `-keepalive-interval` | `15s`                  | SSE idle keep-alive interval; `0` disables it                      |
-| `-log-file`        | (none)                    | Write logs to file with rotation (file-only by default)            |
-| `-log-max-size`    | `10`                      | Max log file size in MB before rotation                            |
-| `-log-max-backups` | `5`                       | Max number of old log files to retain                              |
-| `-log-max-age`     | `7`                       | Max days to retain old log files                                   |
-| `-log-compress`    | `false`                   | Compress rotated log files with gzip                               |
-| `-log-console`     | `false`                   | Also write logs to console when `-log-file` is set                 |
-| `-otel`            | `false`                   | Enable OpenTelemetry tracing (OTLP HTTP exporter)                  |
-| `-otel-body-limit` | `32768`                   | Max bytes of request body to capture in OTel spans (0 = unlimited) |
+| 选项 | 默认值 | 说明 |
+| --- | --- | --- |
+| `-port` | `3456` | 监听端口 |
+| `-host` | `127.0.0.1` | 绑定地址 |
+| `-db` | 见下表 | Kiro CLI SQLite 数据库路径 |
+| `-api-key` | 空 | 访问本地代理所需的 API Key |
+| `-kiro-api-key` | 空 | 替代 Kiro CLI 数据库的 `ksk_...` Key |
+| `-kiro-api-region` | `us-east-1` | Kiro API Key 所用 Region |
+| `-debug` | `false` | 启用 Debug 日志 |
+| `-keepalive-interval` | `15s` | SSE 空闲心跳间隔；`0` 表示关闭 |
+| `-log-file` | 空 | 写入带轮转的日志文件 |
+| `-log-max-size` | `10` | 单个日志文件最大 MB |
+| `-log-max-backups` | `5` | 最大备份文件数量 |
+| `-log-max-age` | `7` | 日志最大保留天数 |
+| `-log-compress` | `false` | gzip 压缩轮转日志 |
+| `-log-console` | `false` | 设置日志文件时同时输出控制台 |
+| `-otel` | `false` | 启用 OTLP HTTP OpenTelemetry |
+| `-otel-body-limit` | `32768` | Span 捕获请求正文的最大字节数；`0` 不限制 |
 
-#### Default DB path
+Kiro CLI 默认数据库：
 
-| OS    | Path                                                  |
-| ----- | ----------------------------------------------------- |
+| 系统 | 路径 |
+| --- | --- |
 | macOS | `~/Library/Application Support/kiro-cli/data.sqlite3` |
-| Linux | `~/.local/share/kiro-cli/data.sqlite3`                |
-| Windows | `%USERPROFILE%\.local\share\kiro-cli\data.sqlite3`; the launcher also probes `%LOCALAPPDATA%` and `%APPDATA%` |
+| Linux | `~/.local/share/kiro-cli/data.sqlite3` |
+| Windows | `%USERPROFILE%\.local\share\kiro-cli\data.sqlite3`；启动器还会探测 `%LOCALAPPDATA%` 和 `%APPDATA%` |
 
-### Environment variables
+### 网关环境变量
 
-Command-line options can be overridden with environment variables.
-
-| Variable                 | Corresponding option |
-| ------------------------ | -------------------- |
-| `KIROCC_PORT`            | `-port`              |
-| `KIROCC_HOST`            | `-host`              |
-| `KIROCC_DB_PATH`         | `-db`                |
-| `KIROCC_API_KEY`         | `-api-key`           |
-| `KIRO_API_KEY`           | `-kiro-api-key`      |
-| `KIRO_API_REGION`        | `-kiro-api-region`   |
-| `KIROCC_DEBUG`           | `-debug`             |
+| 变量 | 对应选项/用途 |
+| --- | --- |
+| `KIROCC_PORT` | `-port` |
+| `KIROCC_HOST` | `-host` |
+| `KIROCC_DB_PATH` | `-db` |
+| `KIROCC_API_KEY` | `-api-key` |
+| `KIRO_API_KEY` | `-kiro-api-key` |
+| `KIRO_API_REGION` | `-kiro-api-region` |
+| `KIROCC_DEBUG` | `-debug` |
 | `KIROCC_KEEPALIVE_INTERVAL` | `-keepalive-interval` |
-| `KIROCC_LOG_FILE`        | `-log-file`          |
-| `KIROCC_LOG_MAX_SIZE`    | `-log-max-size`      |
-| `KIROCC_LOG_MAX_BACKUPS` | `-log-max-backups`   |
-| `KIROCC_LOG_MAX_AGE`     | `-log-max-age`       |
-| `KIROCC_LOG_COMPRESS`    | `-log-compress`      |
-| `KIROCC_LOG_CONSOLE`     | `-log-console`       |
-| `KIROCC_OTEL`            | `-otel`              |
-| `KIROCC_OTEL_BODY_LIMIT` | `-otel-body-limit`   |
-| `KIROCC_MODEL_MAPPINGS`  | Custom model mapping JSON (no flag) |
+| `KIROCC_LOG_FILE` | `-log-file` |
+| `KIROCC_LOG_MAX_SIZE` | `-log-max-size` |
+| `KIROCC_LOG_MAX_BACKUPS` | `-log-max-backups` |
+| `KIROCC_LOG_MAX_AGE` | `-log-max-age` |
+| `KIROCC_LOG_COMPRESS` | `-log-compress` |
+| `KIROCC_LOG_CONSOLE` | `-log-console` |
+| `KIROCC_OTEL` | `-otel` |
+| `KIROCC_OTEL_BODY_LIMIT` | `-otel-body-limit` |
+| `KIROCC_MODEL_MAPPINGS` | 自定义模型映射 JSON，无对应 Flag |
 
-### OpenTelemetry tracing
-
-Enable distributed tracing to visualize the full request chain in Jaeger, Grafana Tempo, or any OTLP-compatible backend.
+### OpenTelemetry
 
 ```bash
-# Start a local collector (e.g., Grafana LGTM stack)
 docker run -d --name lgtm -p 3000:3000 -p 4317:4317 -p 4318:4318 grafana/otel-lgtm
-
-# Start the locally built gateway with tracing enabled
 ./dist/kirocc -otel
 ```
 
-The OTLP endpoint defaults to `http://localhost:4318` and can be configured via the standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable.
+默认 OTLP Endpoint 为 `http://localhost:4318`，可通过标准变量
+`OTEL_EXPORTER_OTLP_ENDPOINT` 修改。Span 可能包含代码和请求正文，注意保密。
 
-### Custom model mappings
-
-Use the `KIROCC_MODEL_MAPPINGS` environment variable to override model name mappings.
+### 自定义模型映射
 
 ```bash
 export KIROCC_MODEL_MAPPINGS='[{"anthropic":"my-model","kiro":"claude-sonnet-4.5","context_window_size":200000}]'
 ```
 
-## Endpoints
+## API Endpoint
 
-| Path                             | Description                              |
-| -------------------------------- | ---------------------------------------- |
-| `GET /health`                    | Health check                             |
-| `GET /v1/models`                 | List available models                    |
-| `POST /v1/messages`              | Messages API (streaming / non-streaming) |
-| `POST /v1/messages/count_tokens` | Token count (approximate \*)             |
+| 路径 | 说明 |
+| --- | --- |
+| `GET /health` | 健康检查；不要求本地代理 API Key |
+| `GET /v1/models` | 返回模型列表 |
+| `POST /v1/messages` | Messages API，支持流式/非流式 |
+| `POST /v1/messages/count_tokens` | 近似 Token Count |
 
-\* `count_tokens` uses the `cl100k_base` encoding from [tiktoken-go](https://github.com/pkoukk/tiktoken-go), which differs from Claude's actual tokenizer. The returned value is an approximation.
+`count_tokens` 使用 [tiktoken-go](https://github.com/pkoukk/tiktoken-go) 的
+`cl100k_base`，与 Claude 实际 Tokenizer 不同，结果仅为近似值。
 
-## Architecture
+## 架构
 
 ```mermaid
 flowchart TB
-    subgraph Client
-        CC["Claude Code / Anthropic API Client"]
-    end
+    Client["Claude Code / Anthropic API 客户端"]
 
-    subgraph kirocc ["kirocc (standalone :3456 / claude-kiro :3457)"]
-        direction TB
-        MW["Middleware<br/>(OTel Tracing, Trace ID, CORS, API Key Auth)"]
+    subgraph Gateway ["kirocc（独立 :3456 / claude-kiro :3457）"]
+        MW["中间件<br/>Trace ID / CORS / 本地 API Key / OTel"]
         Handler["Messages Handler"]
-        Auth["Auth<br/>(SQLite + Token Refresh)"]
-        WebSearchRoute["Native WebSearch Router<br/>(Anthropic server tool ↔ Kiro MCP)"]
-
-        subgraph reqconv ["Request Conversion"]
-            direction LR
-            ModelResolve["Model Resolution<br/>claude-sonnet-4-6 → claude-sonnet-4.6"]
-            MsgNorm["Message Normalization"]
-            ToolConv["Tool & Schema Conversion"]
-            ToolSearch["Tool Search<br/>(regex / BM25)"]
-            EffortResolve["Effort Resolution<br/>(native output_config.effort)"]
-            EnvState["Env State<br/>(&lt;env&gt; block → operatingSystem/cwd, current message only)"]
-            CacheConv["Cache Point Conversion<br/>(tool-level only)"]
-        end
-
-        subgraph respconv ["Response Conversion"]
-            direction LR
-            EventParse["AWS Event Stream Parser"]
-            ThinkingParse["Thinking Tag Parser"]
-            SSEWrite["SSE Writer"]
-            TruncDetect["Truncation Detection"]
-            GateWrite["Gate Writer<br/>(buffered retry)"]
-        end
+        Auth["认证<br/>Kiro CLI SQLite / API Key / Token 刷新"]
+        SearchRoute["原生 WebSearch 路由<br/>Anthropic server tool ↔ Kiro MCP"]
+        Req["请求转换<br/>模型 / 消息 / Tool / Schema / Effort / Cache"]
+        Resp["响应转换<br/>AWS Event Stream / Thinking / SSE / 截断 / 重试"]
     end
 
-    subgraph Kiro ["Kiro services"]
-        KiroAPI["runtime.{region}.kiro.dev"]
-        KiroSearch["q.{region}.amazonaws.com/mcp<br/>web_search"]
-    end
+    Runtime["Kiro 推理<br/>runtime.{region}.kiro.dev"]
+    Search["Kiro 搜索 MCP<br/>q.{region}.amazonaws.com/mcp"]
 
-    CC -- "Anthropic Messages API<br/>(JSON / SSE)" --> MW
+    Client -- "Anthropic JSON / SSE" --> MW
     MW --> Handler
     Handler --> Auth
-    Handler --> reqconv
-    Handler --> WebSearchRoute
-    reqconv -- "Kiro Payload<br/>(JSON)" --> KiroAPI
-    KiroAPI -- "AWS Event Stream<br/>(binary frames)" --> respconv
-    WebSearchRoute -- "JSON-RPC tools/call" --> KiroSearch
-    KiroSearch -- "Search results" --> WebSearchRoute
-    WebSearchRoute -- "server_tool_use + result<br/>(JSON / SSE)" --> CC
-    respconv -- "Anthropic SSE / JSON" --> CC
+    Handler --> Req
+    Handler --> SearchRoute
+    Req -- "Kiro JSON" --> Runtime
+    Runtime -- "AWS Event Stream" --> Resp
+    Resp -- "Anthropic JSON / SSE" --> Client
+    SearchRoute -- "JSON-RPC tools/call" --> Search
+    Search -- "搜索结果" --> SearchRoute
+    SearchRoute -- "server_tool_use + result" --> Client
 ```
 
-### Request flow
+### 请求流程
 
-1. Client sends an Anthropic Messages API request to kirocc
-2. Middleware assigns a trace ID, handles CORS, and validates the API key
-3. Auth reads/refreshes credentials from Kiro CLI's SQLite DB
-4. Handler resolves the model name and determines thinking mode
-5. A request containing only Anthropic's native `web_search_20250305` server
-   tool takes the Kiro MCP path: the handler extracts the query, calls
-   `tools/call`, and writes paired `server_tool_use` and
-   `web_search_tool_result` blocks as JSON or SSE. It never reaches the Kiro
-   inference endpoint.
-6. All other requests use the inference conversion pipeline:
-   - Normalizes messages (merges consecutive same-role messages, extracts text/images/tool_use/tool_result from multi-block content)
-   - Converts tools and sanitizes JSON Schema (removes unsupported keywords, flattens `anyOf`/`oneOf`/`allOf`)
-   - If tool search tools are present, partitions tools into active/deferred and injects a proxy-side `ToolSearch` tool
-   - Extracts system prompt and places it as a history entry pair
-   - Parses the `<env>` block from the system prompt into `envState` (`operatingSystem`, `currentWorkingDirectory`) and attaches it to the current message only
-   - Reorders tool results to match the preceding assistant's tool_use order
-   - Forwards reasoning effort natively as `additionalModelRequestFields.output_config.effort` at the request root (sibling of `conversationState`); the resolved effort is validated/clamped per model
-   - Converts Anthropic tool-level `cache_control` to Kiro `cachePoint`
-7. Kiro API returns an AWS Event Stream (binary frames)
-8. Response conversion pipeline:
-   - Parses binary event stream frames
-   - Converts cumulative text to incremental deltas
-   - Intercepts `ToolSearch` tool_use calls, executes search, emits `server_tool_use`/`tool_search_tool_result` SSE events, and re-requests Kiro with discovered tools (up to 3 rounds)
-   - Parses `<thinking>` tags from `assistantResponseEvent` or uses `reasoningContentEvent` (with deduplication)
-   - Enforces `stop_sequences` and `max_tokens` adapter-side
-   - Detects truncated responses and stores them; a notice is injected into the next request
-   - Gate Writer buffers output until visible content arrives, enabling transparent retry of thinking-only responses
+1. 客户端向 `/v1/messages` 发送 Anthropic Messages API 请求。
+2. 中间件分配 Trace ID、处理 CORS、验证本地代理 API Key。
+3. 认证层读取/刷新 Kiro CLI 凭据，或使用显式 Kiro API Key。
+4. Handler 解析模型、上下文窗口和 Thinking/Effort。
+5. 如果请求只含一个 `web_search_20250305` server tool，则提取查询并直接走
+   Kiro MCP；不会进入 Kiro 推理 Endpoint。
+6. 其他请求进入推理转换链：
+   - 合并连续同角色消息，解析文本、图片、`tool_use`、`tool_result`。
+   - 转换 Tool 并清理 JSON Schema，处理 `anyOf`/`oneOf`/`allOf`。
+   - 拆分 active/deferred 工具并注入代理侧 `ToolSearch`。
+   - 把系统提示转换为历史消息对，解析 `<env>` 中的系统和工作目录。
+   - 按前一个 Assistant Tool 调用顺序重排 Tool Result。
+   - 转发并按模型校验 `output_config.effort`。
+   - 把工具级 `cache_control` 转换成 Kiro `cachePoint`。
+7. Kiro 推理接口返回二进制 AWS Event Stream。
+8. 响应链解析帧、生成增量文本、处理 Thinking、Tool Search 内循环、
+   `stop_sequences`/`max_tokens`、截断和空可见响应重试，最终输出 JSON/SSE。
 
-### Native WebSearch
+### Kiro 原生 WebSearch
 
-The supported Claude Code contract is a request whose `tools` array contains
-exactly one `web_search_20250305` server tool. The gateway:
+当前支持 Claude Code 的原生调用形式：`tools` 数组只包含一个
+`web_search_20250305` server tool。网关会：
 
-1. extracts Claude Code's search query from the final user message;
-2. calls Kiro's regional MCP endpoint with JSON-RPC `tools/call` and
-   `name: web_search`;
-3. refreshes credentials on 403 and retries 429/5xx responses with backoff;
-4. returns the same `tool_use_id` in `server_tool_use` and
-   `web_search_tool_result`;
-5. supports non-streaming JSON, ordered SSE events, token counting, and
-   `usage.server_tool_use.web_search_requests`.
+1. 从最后一条用户消息提取查询。
+2. 向 Kiro 区域 MCP 发送 JSON-RPC `tools/call`，Tool 名为 `web_search`。
+3. 遇到 403 刷新凭据，对 429/5xx 退避重试。
+4. 在 `server_tool_use` 和 `web_search_tool_result` 中使用相同
+   `tool_use_id`。
+5. 支持非流式 JSON、有序 SSE、Token Count 和
+   `usage.server_tool_use.web_search_requests`。
 
-Deliberate current boundary: a hand-written request that combines native
-WebSearch with another client tool returns HTTP 400. Claude Code's observed
-built-in WebSearch subrequest uses the supported single-server-tool form.
-Search availability, ranking, result freshness, and subscription enforcement
-remain upstream Kiro behavior.
+手工把原生 WebSearch 与其他客户端 Tool 放在同一次请求中会明确返回 HTTP
+400。Claude Code 已观察到的内置 WebSearch 子请求使用受支持的单 server-tool
+形式。搜索可用性、排序、时效性和订阅校验仍由 Kiro 上游决定。
 
-### Extended Thinking
+### 扩展思考与 Effort
 
-kiro-cli 2.10.0 expresses reasoning depth natively through `output_config.effort`. kirocc forwards it as `additionalModelRequestFields.output_config.effort` at the request root (sibling of `conversationState`):
+kirocc 把 reasoning depth 放在请求根部的
+`additionalModelRequestFields.output_config.effort`：
 
 ```json
 {
-  "conversationState": { "...": "..." },
+  "conversationState": {"...": "..."},
   "additionalModelRequestFields": {
-    "output_config": { "effort": "medium" }
+    "output_config": {"effort": "medium"}
   }
 }
 ```
 
-Thinking is enabled by any of:
+Thinking 可由以下方式启用：
 
-- Model name with `[1m]` suffix (e.g., `claude-sonnet-4-6[1m]`)
-- `Anthropic-Beta` header containing `context-1m` (e.g., `context-1m-2025-01-01`)
-- `thinking.type` set to `"enabled"` or `"adaptive"` in the request
+- Sonnet 4.x 等模型名带 `[1m]` 后缀。
+- `Anthropic-Beta` Header 包含 `context-1m`。
+- 请求中的 `thinking.type` 为 `"enabled"` 或 `"adaptive"`。
 
-Exception: the `[1m]` suffix on an **always-1M** model (`claude-opus-4-8[1m]` / `claude-opus-4-7[1m]` / `claude-opus-4-6[1m]` / `claude-sonnet-5[1m]`) is a first-class alias that only advertises the 1M context window — it does **not** enable thinking (see [Model mappings](#model-mappings)). Thinking on those models is still opt-in via the `context-1m` header or the `thinking` field.
+Effort 解析规则：
 
-The reasoning effort sent to the backend is resolved as follows:
+1. 识别到显式 `output_config.effort` 时优先使用，并按模型允许枚举校验；
+   不支持 `xhigh` 的模型会收敛为 `max`，未知值会丢弃。
+2. 已启用 Thinking 但没有显式 Effort 时，支持 Effort 的模型默认发送
+   `medium`。
+3. 否则不发送该字段。
 
-1. An explicit, recognized `output_config.effort` wins, validated/clamped to the model's allowed enum (`xhigh` on a 4-value model clamps to `max`; unrecognized strings are dropped).
-2. Otherwise, if reasoning is enabled (via `thinking.type`, the `[1m]` suffix, or the `context-1m` header) without an explicit effort, a default effort of `medium` is sent so the intent reaches the backend.
-3. Otherwise the field is omitted.
+允许的级别：
 
-Per-model allowed effort levels:
+- `claude-opus-4.8`、`claude-opus-4.7`、`claude-sonnet-5`：
+  `low`、`medium`、`high`、`xhigh`、`max`。
+- `claude-opus-4.6`、`claude-sonnet-4.6` 及 `-1m` 版本：
+  `low`、`medium`、`high`、`max`。
+- 其他模型不发送 `additionalModelRequestFields`。
 
-- `claude-opus-4.8`, `claude-opus-4.7`, `claude-sonnet-5`: `low`, `medium`, `high`, `xhigh`, `max`
-- `claude-opus-4.6`, `claude-sonnet-4.6` (and their `-1m` variants): `low`, `medium`, `high`, `max` (no `xhigh`; clamps to `max`)
-- All other models omit `additionalModelRequestFields` entirely
-
-`thinking.budget_tokens` is accepted in the request but no longer affects behavior; reasoning depth is conveyed entirely through `effort`.
+`thinking.budget_tokens` 会被接受，但 reasoning depth 完全由 Effort 表达。
+对于始终 1M 的 Opus 4.6/4.7/4.8 和 Sonnet 5，请求模型名中的 `[1m]`
+只是上下文窗口别名，不会单独启用 Thinking。
 
 ### Tool Search
 
-The Kiro backend does not support Anthropic's [Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool). kirocc implements it proxy-side with an inner loop:
+Kiro 推理后端不原生支持 Anthropic Tool Search，因此由网关实现内循环：
 
-1. Client sends `tool_search_tool_regex_20251119` (or `bm25`) + tools with `defer_loading: true`
-2. Proxy partitions tools into active (sent to Kiro) and deferred (held for search)
-3. Proxy injects a `ToolSearch` tool definition that Kiro can understand
-4. When the model calls `ToolSearch`, the proxy intercepts the tool_use:
-   - Executes regex or BM25 search against deferred tools
-   - Emits `server_tool_use` + `tool_search_tool_result` SSE events to the client
-   - Promotes discovered tools to active and rebuilds the Kiro request
-   - Calls Kiro again with the updated tool list (up to 3 rounds)
-5. When the model calls a regular tool or produces text, the response is forwarded to the client
+1. 客户端发送 `tool_search_tool_regex_20251119` 或 BM25 Tool，并把部分工具
+   标为 `defer_loading: true`。
+2. 网关只把 active Tool 发送给 Kiro，把 deferred Tool 留在本地索引。
+3. 网关注入 Kiro 能理解的 `ToolSearch` Tool。
+4. 模型调用 `ToolSearch` 时，网关执行 regex/BM25，发出
+   `server_tool_use` + `tool_search_tool_result`，提升命中的 Tool 后重新请求
+   Kiro，最多 3 轮。
+5. 模型调用普通 Tool 或输出文本时结束内循环并转发。
 
-Supported query forms:
+查询形式：
 
-- `select:Read,Edit,Grep` — exact tool selection by name
-- `read file` — keyword search (regex with word-level OR fallback, or BM25 scoring)
+- `select:Read,Edit,Grep`：按名称精确选择 Tool。
+- `read file`：关键词搜索，regex 使用词级 OR fallback，或使用 BM25 评分。
 
-### Model mappings
+### 模型映射
 
-| Input model             | Kiro model             | Context window |
-| ----------------------- | ---------------------- | -------------- |
-| `claude-sonnet-5`       | `claude-sonnet-5`      | 1M             |
-| `claude-sonnet-5[1m]`   | `claude-sonnet-5`      | 1M             |
-| `claude-sonnet-4-6`     | `claude-sonnet-4.6`    | 200k           |
-| `claude-sonnet-4-6[1m]` | `claude-sonnet-4.6-1m` | 1M             |
-| `claude-sonnet-4.5`     | `claude-sonnet-4.5`    | 200k           |
-| `claude-sonnet-4.5[1m]` | `claude-sonnet-4.5-1m` | 1M             |
-| `claude-opus-4-8`       | `claude-opus-4.8`      | 1M             |
-| `claude-opus-4-8[1m]`   | `claude-opus-4.8`      | 1M             |
-| `claude-opus-4-7`       | `claude-opus-4.7`      | 1M             |
-| `claude-opus-4-7[1m]`   | `claude-opus-4.7`      | 1M             |
-| `claude-opus-4-6`       | `claude-opus-4.6`      | 1M             |
-| `claude-opus-4-6[1m]`   | `claude-opus-4.6`      | 1M             |
-| `claude-opus-4.5`       | `claude-opus-4.5`      | 200k           |
-| `claude-haiku-4.5`      | `claude-haiku-4.5`     | 200k           |
+| 输入模型 | Kiro 模型 | 上下文窗口 |
+| --- | --- | --- |
+| `claude-sonnet-5` | `claude-sonnet-5` | 1M |
+| `claude-sonnet-5[1m]` | `claude-sonnet-5` | 1M |
+| `claude-sonnet-4-6` | `claude-sonnet-4.6` | 200k |
+| `claude-sonnet-4-6[1m]` | `claude-sonnet-4.6-1m` | 1M |
+| `claude-sonnet-4.5` | `claude-sonnet-4.5` | 200k |
+| `claude-sonnet-4.5[1m]` | `claude-sonnet-4.5-1m` | 1M |
+| `claude-opus-4-8` | `claude-opus-4.8` | 1M |
+| `claude-opus-4-8[1m]` | `claude-opus-4.8` | 1M |
+| `claude-opus-4-7` | `claude-opus-4.7` | 1M |
+| `claude-opus-4-7[1m]` | `claude-opus-4.7` | 1M |
+| `claude-opus-4-6` | `claude-opus-4.6` | 1M |
+| `claude-opus-4-6[1m]` | `claude-opus-4.6` | 1M |
+| `claude-opus-4.5` | `claude-opus-4.5` | 200k |
+| `claude-haiku-4.5` | `claude-haiku-4.5` | 200k |
 
-Opus 4.6, 4.7, 4.8, and Sonnet 5 always use 1M context (no 200k SKU exists upstream). Unlike Sonnet 4.6, `claude-sonnet-5` has no separate `-1m` SKU: the single `claude-sonnet-5` SKU is always 1M. The explicit `[1m]`-suffixed aliases (`claude-opus-4-8[1m]` / `claude-opus-4-7[1m]` / `claude-opus-4-6[1m]` / `claude-sonnet-5[1m]`) are first-class entries that preserve the suffix verbatim in the response `model` field — this matches Claude Code's default Max-plan state (`lG()` emits `claude-opus-4-8[1m]`) and keeps its `mR()` 1M-context check happy without spuriously enabling extended thinking. Thinking is still opt-in via Sonnet `[1m]` suffix, `Anthropic-Beta: context-1m` header, or `thinking` field.
+没有匹配的 `claude-*` 模型会原样传递；非 Claude 模型 fallback 到
+`claude-sonnet-4.6`。Opus 4.6/4.7/4.8 和 Sonnet 5 只有 1M SKU；响应模型名
+会保留/补充 `[1m]`，让 Claude Code 正确识别 1M 上下文，避免按 200k 提前
+自动压缩。响应中的 `[1m]` 只用于声明上下文窗口，不代表已启用 Thinking。
 
-Unmatched `claude-*` models are passed through as-is. Non-claude models fall back to `claude-sonnet-4.6`.
+## 已知边界
 
-#### Response model ID
+- Windows 原生支持面向 Windows 11 x64。CI 会解析 PowerShell、运行 Windows
+  Go 测试并构建 PE 文件，但带真实凭据的 Windows 全新安装 E2E 仍取决于环境。
+- 原生 WebSearch 与其他客户端 Tool 混合的手工请求返回 HTTP 400。
+- `count_tokens` 是近似值，不等同 Claude 官方 Tokenizer。
+- Computer Use、Ultraplan、Ultrareview 等入口虽然被 ClawGod 解锁，实际能力仍
+  依赖操作系统、Native Module、远端服务和 Kiro 后端兼容性。
+- Kiro 订阅、模型权限、限流、地区可用性、搜索质量和时效性均由上游决定。
+- ClawGod 原地更新被禁用；必须通过本仓库安装器更新。
+- 自动测试验证协议和错误路径，但不能证明任意时刻的 Kiro 服务可用性。
 
-The `model` field in `/v1/messages` responses (streaming `message_start`, non-streaming body, and tool-search path) is returned as the **Anthropic-form ID** (e.g. `claude-opus-4-7`), not the Kiro SKU (`claude-opus-4.7`).
+## 排障
 
-When the proxy routes to a **1M context window** (always-1M SKU such as `claude-opus-4.8` / `claude-opus-4.7` / `claude-opus-4.6`, or a model invoked with the `[1m]` suffix or `Anthropic-Beta: context-1m` header), a trailing `[1m]` is appended to the response model ID (e.g. `claude-opus-4-8[1m]`). Claude Code's client-side context-window logic matches `/\[1m\]/i` on the response model to pick the 1M window — without the suffix it defaults to 200k and auto-compacts at ~160k even when upstream actually has 1M of context.
-
-Note: `[1m]` has different meanings on request vs. response. On the **request** `model` it is a client-supplied thinking-opt-in signal (and is stripped before upstream routing). On the **response** `model` it is purely a context-window advertisement for Claude Code and does not imply that extended thinking was enabled.
-
-## Known limitations
-
-- Native Windows support targets Windows 11 x64. PowerShell syntax, Windows Go
-  tests, and PE builds run in CI, but a credentialed clean-install E2E on
-  Windows remains environment-dependent.
-- A hand-written request that mixes native WebSearch with client tools returns
-  HTTP 400.
-- `count_tokens` is approximate and does not use Claude's official tokenizer.
-- Computer Use, Ultraplan, Ultrareview, and other unlocked entry points still
-  depend on the OS, native modules, remote services, and Kiro compatibility.
-- Kiro controls quota, model authorization, throttling, regional availability,
-  and search quality/freshness.
-- ClawGod in-place updates are disabled; refresh through this repository.
-- Automated tests validate contracts and error paths, not current upstream
-  service availability.
-
-## Troubleshooting
-
-| Symptom | Check or fix |
+| 现象 | 检查或处理 |
 | --- | --- |
-| `claude-kiro: command not found` | Add the per-user `.local/bin` directory to `PATH`; on Windows open a new terminal after installation |
-| Installer reports a missing prerequisite | Default mode needs Go/Node (plus curl on macOS/Linux); Bun, ripgrep, and SHA-256 tooling are required only with ClawGod |
-| `official Claude Code command not found` | Install official Claude Code and confirm `command -v claude` before rerunning the installer |
-| Gateway fails to start | Read `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`; choose another port with `KIROCC_PORT=3458` if needed |
-| Kiro returns 401/403 | Log in again with Kiro CLI, or verify `KIRO_API_KEY` and `KIRO_API_REGION`; do not substitute `KIROCC_API_KEY` |
-| WebSearch still reports the old schema 502 | Confirm `command -v claude-kiro`, rerun `./scripts/install.sh`, and verify the gateway binary is `kirocc-native-websearch` |
-| Native WebSearch returns HTTP 400 | Do not combine `web_search_20250305` with client tools in one hand-written request |
-| `claude-kiro update` is blocked | Expected; pull the repository and rerun the installer, adding the refresh option only for ClawGod mode |
-| UI is not green | Expected in the default official-runtime mode; green branding requires `--with-clawgod` / `-WithClawGod` |
-| Skills, MCPs, or history appear missing | Expected isolation: selectively copy or recreate only the configuration you want under `~/.clawgod-kirocc/claude-config`; do not symlink the entire official profile |
+| `claude-kiro: command not found` | 把用户 `.local/bin` 加入 `PATH`；Windows 安装后请打开新终端 |
+| 安装器提示缺少依赖 | 默认模式需要 Go/Node，macOS/Linux 另需 curl；只有 ClawGod 模式需要 Bun/ripgrep/SHA-256 工具 |
+| 找不到官方 Claude Code | 先确认 `command -v claude` 有结果，再重新安装 |
+| 网关启动失败 | 查看 `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`；端口冲突时使用 `KIROCC_PORT=3458` |
+| Kiro 返回 401/403 | 重新登录 Kiro CLI，或检查 `KIRO_API_KEY`/`KIRO_API_REGION`；不要误用 `KIROCC_API_KEY` |
+| WebSearch 仍出现旧的 Schema 502 | 确认启动的是 `claude-kiro`，重跑安装器，并确认网关文件为 `kirocc-native-websearch` |
+| 原生 WebSearch 返回 HTTP 400 | 不要在手工请求中把 `web_search_20250305` 与客户端 Tool 混合 |
+| `claude-kiro update` 被拦截 | 这是预期行为；拉取仓库后重跑安装器，仅在 ClawGod 模式增加 refresh 参数 |
+| 界面不是绿色 | 默认官方 runtime 模式本来就不是绿色；必须使用 `--with-clawgod` / `-WithClawGod` |
+| Skills/MCP/历史为空 | 这是配置隔离的结果；只选择性复制需要的配置到 `~/.clawgod-kirocc/claude-config`，不要整体软链接官方 Profile |
 
-## Security and data handling
+## 安全与数据处理
 
-- The launcher and standalone gateway bind to `127.0.0.1` by default. If you
-  bind to a non-loopback address, set a strong `KIROCC_API_KEY` and add network
-  access controls.
-- Kiro credentials remain in Kiro CLI's database or the process environment.
-  They are never intentionally copied into this repository.
-- Generated ClawGod files, extracted Claude Code content, provider files,
-  sessions, logs, and local databases are excluded from Git.
-- Debug logs and OpenTelemetry spans may contain request/response bodies. Store
-  and share them as secrets; reduce `-otel-body-limit` or disable capture when
-  handling sensitive code.
-- ClawGod removes selected local caution prompts. That does not grant authority
-  to access systems or perform destructive actions. Review tool calls and keep
-  backups.
-- Review [`SECURITY.md`](SECURITY.md) before reporting a vulnerability; never
-  include live credentials or session logs in an issue or the Telegram group.
+- 启动器和独立网关默认只绑定 `127.0.0.1`。如果绑定非 Loopback 地址，必须
+  设置强 `KIROCC_API_KEY` 并增加网络访问控制。
+- Kiro 凭据保留在 Kiro CLI 数据库或进程环境中，不应进入 Git。
+- 生成的 ClawGod 文件、提取出的 Claude 内容、Provider 文件、会话、日志和本地
+  数据库均被排除在仓库之外。
+- Debug 日志和 OpenTelemetry Span 可能包含代码与请求正文。应按秘密数据处理，
+  必要时降低 `-otel-body-limit` 或关闭捕获。
+- ClawGod 会移除部分本地谨慎操作提示，但这不构成访问其他系统或执行破坏性
+  操作的授权；执行 Tool Call 前仍应检查并保留备份。
+- 报告漏洞前阅读 [`SECURITY.md`](SECURITY.md)，不要在 Issue 或 Telegram 群中
+  发送真实凭据和会话日志。
 
-## Testing and validation status
+## 测试与验证状态
 
 ```bash
 make test
@@ -748,32 +723,28 @@ python3 -m json.tool config/settings.json >/dev/null
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -o /tmp/kirocc.exe ./cmd/kirocc
 ```
 
-`make test` runs `go test -race ./...`. CI repeats formatting/fix checks,
-integration-file validation, golangci-lint, and the race test suite on Linux;
-a native Windows job parses every PowerShell script, runs Go tests, and builds
-the Windows gateway.
+`make test` 会执行 `go test -race ./...`。CI 还会运行 `go mod tidy`、
+`go fix`、集成文件校验和 golangci-lint；Windows Job 会解析全部 PowerShell、
+运行 Go 测试并构建 Windows 网关。
 
-Verified snapshot on macOS arm64 (2026-08-03):
+macOS arm64 验证快照（2026-08-03）：
 
-- isolated installer completed with the official Claude binary path, binary
-  SHA-256, and official settings SHA-256 unchanged before/after;
-- `claude-kiro --version` ran through the isolated ClawGod launcher;
-- unit/contract tests covered Kiro MCP headers and JSON-RPC, 403 refresh,
-  429/5xx retry, non-streaming blocks, ordered SSE events, matching
-  `tool_use_id`, token count, and mixed-tool rejection;
-- the public GitHub CI passed for the published code.
+- 完整隔离安装前后，官方 Claude 路径、二进制 SHA-256 和官方 settings
+  SHA-256 保持一致。
+- `claude-kiro --version` 已通过隔离 ClawGod 启动器运行。
+- 自动测试覆盖 Kiro MCP Header/JSON-RPC、403 刷新、429/5xx 重试、非流式块、
+  SSE 事件顺序、`tool_use_id` 配对、Token Count 和混合 Tool 拒绝。
+- 公开仓库代码对应的 GitHub CI 已通过。
 
-CI cannot prove current Kiro subscription availability, search ranking, remote
-ClawGod services, or provider-side feature authorization. Credentialed live E2E
-tests remain environment-dependent and should not be inferred from unit-test
-success.
+CI 无法证明实时 Kiro 订阅可用性、搜索排序、ClawGod Remote 服务或 Provider
+服务端功能授权。需要凭据的 Live E2E 结果不能由单元测试成功推导。
 
-## License
+## 许可证和上游
 
-- This repository and the kirocc-derived code: Apache-2.0.
-- Upstream [kirocc](https://github.com/d-kuro/kirocc): Apache-2.0.
-- [ClawGod](https://github.com/0Chencc/clawgod): GPL-3.0; downloaded and
-  generated locally, not redistributed by this repository.
-- Claude Code: proprietary Anthropic software and not included.
+- 本仓库以及 kirocc 衍生代码：Apache-2.0。
+- 原始 kirocc：<https://github.com/d-kuro/kirocc>，Apache-2.0。
+- ClawGod：<https://github.com/0Chencc/clawgod>，GPL-3.0；本仓库不重新分发，
+  只在用户机器上下载并生成独立 runtime。
+- Claude Code：Anthropic 专有软件，不包含在仓库中。
 
-See [`NOTICE`](NOTICE) for attribution and modification boundaries.
+具体归属和修改说明见 [`NOTICE`](NOTICE)。

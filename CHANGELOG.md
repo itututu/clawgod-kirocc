@@ -24,6 +24,9 @@ pre-release tags based on the upstream kirocc version.
 
 ### Changed
 
+- GitHub now renders the complete Chinese documentation by default from
+  `README.md`; the complete English documentation is available in
+  `README_EN.md`, and the first fork release draft is Chinese-first.
 - ClawGod is now an explicit optional component selected with
   `--with-clawgod` / `-WithClawGod`; it is no longer downloaded by default.
 - The managed gateway uses port `3457` by default to avoid the upstream

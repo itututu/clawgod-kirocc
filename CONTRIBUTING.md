@@ -45,7 +45,7 @@ ripgrep, or ClawGod; those dependencies belong only to opt-in ClawGod mode.
   fork integration code, generated-runtime behavior, or documentation only.
 - Add or update tests for protocol, streaming, retry, launcher, or installer
   behavior.
-- Keep `README.md` and `README_ZH.md` aligned when changing user-facing setup,
+- Keep the Chinese-first `README.md` and `README_EN.md` aligned when changing user-facing setup,
   flags, environment variables, capabilities, or limitations.
 - Do not vendor downloaded installers, generated ClawGod runtime files,
   extracted Claude Code source, credentials, histories, or logs.

@@ -33,6 +33,7 @@ archives:
       - NOTICE
       - CHANGELOG.md
       - README.md
+      - README_EN.md
       - README_ZH.md
 
 checksum:
