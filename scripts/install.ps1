@@ -73,6 +73,40 @@ foreach ($commandName in $requiredCommands) {
     }
 }
 
+$goCommand = Get-Command go -CommandType Application -ErrorAction Stop |
+    Select-Object -First 1
+$goPath = if ($goCommand.Path) { $goCommand.Path } else { $goCommand.Source }
+$goVersionText = (& $goPath version 2>$null | Select-Object -First 1)
+$goVersionMatch = [regex]::Match([string]$goVersionText, '\bgo(?<version>[0-9]+(?:\.[0-9]+){1,2})')
+if ($LASTEXITCODE -ne 0 -or -not $goVersionMatch.Success) {
+    throw "unable to determine the Go version from '$goPath' (reported '$goVersionText')"
+}
+$installedGoVersion = [Version]$goVersionMatch.Groups["version"].Value
+$goDirective = Select-String -LiteralPath (Join-Path $ProjectRoot "go.mod") `
+    -Pattern '^\s*go\s+(?<version>[0-9]+(?:\.[0-9]+){1,2})\s*$' |
+    Select-Object -First 1
+if (-not $goDirective) {
+    throw "unable to read the required Go version from go.mod"
+}
+$requiredGoVersion = [Version]$goDirective.Matches[0].Groups["version"].Value
+if ($installedGoVersion -lt $requiredGoVersion) {
+    throw @"
+Go $installedGoVersion at '$goPath' is too old. This project requires Go $requiredGoVersion or newer.
+
+Upgrade Go, open a new PowerShell window, and verify the active executable:
+
+  winget upgrade --id GoLang.Go -e
+  # If Go was not installed through winget:
+  winget install --id GoLang.Go -e
+  where.exe go
+  go version
+
+If where.exe lists more than one go.exe, remove the older entry that appears
+first in PATH, then rerun this installer.
+"@
+}
+Write-Host "Go prerequisite: $goVersionText ($goPath)"
+
 $OfficialClaudeCommand = Get-Command claude -CommandType Application,ExternalScript -ErrorAction SilentlyContinue |
     Select-Object -First 1
 if (-not $OfficialClaudeCommand) {

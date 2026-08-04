@@ -183,7 +183,7 @@ v1.7.5 runtime patch，并关闭 Lean 模式。未选择该参数时，`claude-k
 ### 依赖
 
 - macOS、Linux，或原生 Windows 11 x64
-- Go 1.26+、Node.js 18+
+- Go 1.26.1+、Node.js 18+
 - 一种可用的 Kiro 上游凭据：Kiro CLI 登录数据库，或 Kiro API Key 和 Region
 - 官方 Claude Code（只在用户本机使用，不会进入仓库）
 - macOS/Linux 需要 curl
@@ -748,6 +748,7 @@ Kiro 推理后端不原生支持 Anthropic Tool Search，因此由网关实现�
 | 现象 | 检查或处理 |
 | --- | --- |
 | `claude-kiro: command not found` | 把用户 `.local/bin` 加入 `PATH`；Windows 安装后请打开新终端 |
+| `go.exe: unknown GOEXPERIMENT jsonv2` | 当前 `go.exe` 低于项目要求；运行 `winget upgrade --id GoLang.Go -e`，打开新 PowerShell，以 `where.exe go` 和 `go version` 确认已使用 Go 1.26.1+ |
 | 安装器提示缺少依赖 | 默认模式需要 Go/Node，macOS/Linux 另需 curl；只有 ClawGod 模式需要 Bun/ripgrep/SHA-256 工具 |
 | `No usable Kiro credential source found` | 运行错误中给出的 Kiro CLI 安装命令，再执行 `kiro-cli login` 和 `kiro-cli whoami`；或在安装及启动时设置 `KIRO_API_KEY`/`KIRO_API_REGION` |
 | 找不到官方 Claude Code | 先确认 `command -v claude` 有结果，再重新安装 |

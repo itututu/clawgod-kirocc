@@ -168,7 +168,7 @@ isolation, credential hygiene, and verification rules.
 ### Prerequisites
 
 - macOS, Linux, or native Windows 11 x64
-- Go 1.26+ and Node.js 18+
+- Go 1.26.1+ and Node.js 18+
 - one usable Kiro upstream credential: a Kiro CLI login database, or a Kiro API key and region
 - an official Claude Code installation (used locally; never copied into this repository)
 - macOS/Linux: curl
@@ -798,6 +798,7 @@ Note: `[1m]` has different meanings on request vs. response. On the **request** 
 | --- | --- |
 | `claude-kiro: command not found` | Add the per-user `.local/bin` directory to `PATH`; on Windows open a new terminal after installation |
 | Installer reports a missing prerequisite | Default mode needs Go/Node (plus curl on macOS/Linux); Bun, ripgrep, and SHA-256 tooling are required only with ClawGod |
+| `go.exe: unknown GOEXPERIMENT jsonv2` | The active `go.exe` is older than this project requires. Run `winget upgrade --id GoLang.Go -e`, open a new PowerShell window, then use `where.exe go` and `go version` to confirm Go 1.26.1+ is active |
 | `No usable Kiro credential source found` | Run the displayed Kiro CLI install command, then `kiro-cli login` and `kiro-cli whoami`; or set `KIRO_API_KEY`/`KIRO_API_REGION` for installation and launch |
 | `official Claude Code command not found` | Install official Claude Code and confirm `command -v claude` before rerunning the installer |
 | Gateway fails to start | Read `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`; choose another port with `KIROCC_PORT=3458` if needed |
