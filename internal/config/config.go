@@ -50,6 +50,11 @@ func DefaultDBPathFor(goos, home string) string {
 	switch goos {
 	case "darwin":
 		return filepath.Join(home, "Library", "Application Support", "kiro-cli", "data.sqlite3")
+	case "windows":
+		// Kiro CLI 2.x keeps its SQLite state under the same user-local
+		// hierarchy on native Windows. The PowerShell launcher also probes
+		// LOCALAPPDATA and APPDATA and sets KIROCC_DB_PATH when needed.
+		return filepath.Join(home, ".local", "share", "kiro-cli", "data.sqlite3")
 	default:
 		return filepath.Join(home, ".local", "share", "kiro-cli", "data.sqlite3")
 	}

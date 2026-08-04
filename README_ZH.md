@@ -2,9 +2,10 @@
 
 [English](README.md) · [变更记录](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md) · [上游 kirocc](https://github.com/d-kuro/kirocc) · [ClawGod](https://github.com/0Chencc/clawgod) · [Telegram 交流群](https://t.me/+y-jOB2WmYGo2YjQ1)
 
-这是一个公开、可审计的 Claude Code + ClawGod + Kiro CLI 集成版本。它在
-kirocc 基础上补齐 Kiro 原生 WebSearch，并通过独立的 `claude-kiro` 命令运行，
-不覆盖官方 `claude` 命令。
+这是一个公开、可审计的 Claude Code + Kiro CLI 集成版本，ClawGod 为显式
+可选组件。它在 kirocc 基础上补齐 Kiro 原生 WebSearch，并通过独立的
+`claude-kiro` 命令运行，不覆盖官方 `claude` 命令。默认直接使用官方 Claude
+Code runtime；只有用户主动选择时才安装 ClawGod。
 
 > 本项目与 Anthropic、Amazon、Kiro、d-kuro、ClawGod 均无隶属关系。
 > 仓库不包含 Claude Code 二进制、提取源码、私有内置系统提示词、账号凭据、
@@ -18,7 +19,7 @@ kirocc 基础上补齐 Kiro 原生 WebSearch，并通过独立的 `claude-kiro` 
 ## 文档导航
 
 - [问题背景](#解决的问题)和[版本对比](#版本对比图)
-- [ClawGod 功能](#已集成的-clawgod-功能)和[提示词行为](#clawgod-内置提示词能否继续使用)
+- [可选 ClawGod 功能](#可选的-clawgod-功能)和[提示词行为](#clawgod-内置提示词能否继续使用)
 - [安装、验证、更新和卸载](#安装与生命周期)
 - [主要功能](#主要功能)、[仅安装网关](#仅安装网关)和[使用方式](#使用方式)
 - [API](#api-endpoint)、[架构](#架构)和功能原理
@@ -62,42 +63,50 @@ https://q.<region>.amazonaws.com/mcp
 验证快照：Claude Code 2.1.220、ClawGod 1.7.5、kirocc 0.6.0、Kiro CLI
 2.16.0、macOS arm64，日期 2026-08-03。
 
+最后一列表示显式选择 `--with-clawgod` 后的完整 Patch 配置。默认安装仍包含
+Kiro、原生 WebSearch 和配置隔离，但不应用任何 ClawGod Patch。
+
 ![ClawGod KiroCC 版本对比](docs/assets/comparison.svg)
 
 | 能力 | 官方 Claude Code | 仅 ClawGod | 上游 kirocc 0.6.0 | 我们的 ClawGod KiroCC |
 | --- | :---: | :---: | :---: | :---: |
-| Claude Code 原生工具和运行时 | ✅ | ✅ 已 Patch | ✅ 经协议适配 | ✅ 已 Patch |
+| Claude Code 原生工具和运行时 | ✅ | ✅ 已 Patch | ✅ 经协议适配 | ✅ 默认官方 / 可选 Patch |
 | 使用 Kiro CLI 订阅/凭据 | — | — | ✅ | ✅ |
 | 原生 effort/扩展思考 | 取决于官方账号 | 取决于 Provider | ✅ | ✅ |
 | Anthropic Tool Search 模拟 | 取决于官方接口 | 取决于 Provider | ✅ | ✅ |
 | 内置 WebSearch 走 Kiro MCP | — | — | ❌ 502 | ✅ |
 | WebSearch 非流式与 SSE 流式 | 官方支持 | 取决于 Provider | ❌ | ✅ |
+| Windows 11 x64 原生受管理配置 | ✅ | ✅ | 仅手工网关 | ✅ |
 | 单独命令、配置和端口 | 官方配置 | 默认会替换/别名启动器 | 需手工配置 | ✅ |
 | 本安装器不改官方 `claude` 路径 | ✅ | ❌ 默认安装行为 | ✅ | ✅ |
 | DuckDuckGo 等搜索 MCP 作为备用 | 手工 | 手工 | 手工 | ✅ 可共存 |
-| ClawGod 客户端功能解锁和限制移除 Patch | — | ✅ | — | ✅ |
+| ClawGod 客户端功能解锁和限制移除 Patch | — | ✅ | — | ✅ 可选 |
 | 绕过服务端额度、鉴权、计费或模型权限 | ❌ | ❌ | ❌ | ❌ |
 
 ```mermaid
 flowchart LR
     Official["官方 claude<br/>保持不变"]
     Launcher["claude-kiro<br/>独立配置"]
-    ClawGod["ClawGod runtime<br/>原生提示链 + Patch"]
+    OfficialRuntime["官方 Claude runtime<br/>默认"]
+    ClawGod["ClawGod runtime<br/>可选 Patch"]
     Gateway["patched kirocc<br/>127.0.0.1:3457"]
     Runtime["Kiro 推理接口<br/>runtime.region.kiro.dev"]
     Search["Kiro 原生搜索<br/>q.region.amazonaws.com/mcp"]
 
     Official -. "互不覆盖" .- Launcher
+    Launcher --> OfficialRuntime
     Launcher --> ClawGod
+    OfficialRuntime --> Gateway
     ClawGod --> Gateway
     Gateway --> Runtime
     Gateway --> Search
 ```
 
-## 已集成的 ClawGod 功能
+## 可选的 ClawGod 功能
 
-本项目安装锁定的 ClawGod v1.7.5 runtime patch，并显式使用
-`--lean-off`，所以独立的 `claude-kiro` 配置会保留完整 Claude Code 工具集。
+使用 `--with-clawgod`（Windows 为 `-WithClawGod`）才会安装锁定的 ClawGod
+v1.7.5 runtime patch，并关闭 Lean 模式。未选择该参数时，`claude-kiro`
+直接使用官方 Claude Code runtime，本节所有 Patch 均不会应用。
 
 | ClawGod Patch 类别 | `claude-kiro` 中包含的能力 |
 | --- | --- |
@@ -128,7 +137,7 @@ flowchart LR
 
 ## ClawGod 内置提示词能否继续使用
 
-可以。ClawGod 仍然运行 Claude Code 自带的系统提示链和 runtime patch；KiroCC
+选择 ClawGod 后可以。ClawGod 仍然运行 Claude Code 自带的系统提示链和 runtime patch；KiroCC
 只替换 Anthropic API 的后端地址，不会移除这条提示链。
 
 但官方 Claude Code 内置系统提示词属于专有内容，本仓库不会把从 `cli.cjs` 中
@@ -148,15 +157,20 @@ flowchart LR
 
 ### 依赖
 
-- macOS 或 Linux
-- Go 1.26+
-- Node.js 18+
-- Bun、curl、ripgrep，以及 `shasum` 或 `sha256sum` 之一
+- macOS、Linux，或原生 Windows 11 x64
+- Go 1.26+、Node.js 18+
 - 已安装并登录的 Kiro CLI，或可用的 Kiro API Key 和 Region
 - 官方 Claude Code（只在用户本机使用，不会进入仓库）
-- `~/.local/bin` 已加入 `PATH`
+- macOS/Linux 需要 curl
+- 只有选择 ClawGod 时才需要 Bun 1.3.14+、ripgrep，以及 `shasum` 或 `sha256sum` 之一
+- 用户级 `.local/bin` 已加入 `PATH`（Windows 安装器会自动加入）
 
-### 安装完整配置
+Kiro CLI 的原生 Windows 版本当前面向 Windows 11 x64。单独的 KiroCC
+二进制可能能在更多系统运行，但这不等于完整认证配置已得到支持。
+
+### 默认安装：官方 Claude Code runtime
+
+macOS/Linux：
 
 ```bash
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -165,35 +179,65 @@ cd clawgod-kirocc
 claude-kiro
 ```
 
-安装器会：
+Windows PowerShell：
+
+```powershell
+git clone https://github.com/itututu/clawgod-kirocc.git
+Set-Location clawgod-kirocc
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+claude-kiro
+```
+
+默认安装器只编译 KiroCC 网关，并围绕本机已有的官方 Claude Code 创建独立
+`claude-kiro` 配置；不会下载 ClawGod，也不会创建、替换、重命名或删除官方
+`claude` 命令。
+
+### 可选安装 ClawGod
+
+macOS/Linux：
+
+```bash
+./scripts/install.sh --with-clawgod
+```
+
+Windows PowerShell：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -WithClawGod
+```
+
+选择后安装器会：
 
 1. 编译带原生 WebSearch 的 kirocc。
 2. 下载锁定的 ClawGod v1.7.5 installer。
 3. 校验 installer SHA-256：
    `4a943439ae8cb858e69279d19f0d3a979968fc0a9e4c42e1d1018ae76657ce82`。
 4. 仅在临时目录给 installer 增加隔离路径参数。
-5. 把生成的 ClawGod runtime 放到 `~/.local/share/clawgod-kirocc`。
-6. 把独立状态和 Claude 配置放到 `~/.clawgod-kirocc`。
-7. 创建 `~/.local/bin/claude-kiro`，默认使用 3457 端口。
+5. 把生成的 ClawGod runtime 放入独立目录。
+6. 创建独立状态、Claude 配置和 `claude-kiro` 启动器。
 
-本安装器不会创建、替换或删除 `claude` 命令。
+Windows `install.ps1` 的锁定 SHA-256 为
+`bf2a9947f5f5747ceaf0ebc77f8f0c66887a2c390e7e996c28b6c72b5b579d3e`。
+两个平台都只修改临时下载的安装器副本，不把生成 runtime 提交到 Git。
 
 ### 安装目录
 
-| 路径 | 用途 |
-| --- | --- |
-| `~/.local/bin/claude-kiro` | 独立入口；启动/复用网关后运行隔离 ClawGod |
-| `~/.local/share/clawgod-kirocc/bin/kirocc-native-websearch` | 带 Kiro 原生 WebSearch 的网关 |
-| `~/.local/share/clawgod-kirocc/clawgod/` | 隔离的 ClawGod 启动器和本地 runtime 引用 |
-| `~/.clawgod-kirocc/` | 生成的 ClawGod runtime、vendor 文件和独立状态 |
-| `~/.clawgod-kirocc/claude-config/` | 独立 Claude 设置、项目、会话和附加 `CLAUDE.md` |
-| `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-3457.log` | 默认端口的网关启动日志 |
+| 用途 | macOS/Linux | Windows |
+| --- | --- | --- |
+| 独立启动器 | `~/.local/bin/claude-kiro` | `%USERPROFILE%\.local\bin\claude-kiro.cmd` |
+| KiroCC 网关 | `~/.local/share/clawgod-kirocc/bin/kirocc-native-websearch` | `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\bin\kirocc-native-websearch.exe` |
+| 可选 ClawGod | `~/.local/share/clawgod-kirocc/clawgod/` | `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\clawgod\` |
+| 独立状态 | `~/.clawgod-kirocc/` | `%USERPROFILE%\.clawgod-kirocc\` |
+| Claude 配置 | `~/.clawgod-kirocc/claude-config/` | `%USERPROFILE%\.clawgod-kirocc\claude-config\` |
+| 网关日志 | `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-*` | `%TEMP%\clawgod-kirocc-gateway-*` |
 
 `claude-kiro` 管理的默认端口为 `3457`；单独运行 `kirocc` 的默认端口为
 `3456`。如果 `KIROCC_URL` 已有健康网关，启动器会直接复用；否则会启动一个
 子进程，并在 `claude-kiro` 退出时清理该子进程。
 
 ### 验证安装与隔离
+
+macOS/Linux：
 
 ```bash
 ./scripts/doctor.sh
@@ -203,12 +247,23 @@ claude --version
 claude-kiro --version
 ```
 
+Windows PowerShell：
+
+```powershell
+.\scripts\doctor.ps1
+Get-Command claude
+Get-Command claude-kiro
+claude --version
+claude-kiro --version
+```
+
 诊断脚本完全只读：不会输出凭据、修改配置、启动 Claude Code，也不会启停网关。
 `claude-kiro` 关闭时出现“网关不可达”警告属于正常情况。自动化环境若希望任何
 警告都返回非零状态，可使用 `./scripts/doctor.sh --strict`。
 
-前两个路径必须不同。官方 `claude` 保持原有外观；交互运行
-`claude-kiro` 时应看到 ClawGod 的绿色 Patch 品牌色。`--version` 很快退出，
+两个命令路径必须不同。默认模式下二者都使用官方 runtime，但只有
+`claude-kiro` 使用 Kiro 后端和独立配置；绿色品牌色只在选择 ClawGod 后出现。
+`--version` 很快退出，
 启动器也会同步关闭临时网关；仅在交互会话打开期间检查：
 
 ```bash
@@ -218,17 +273,20 @@ curl http://127.0.0.1:3457/health
 ### 安装参数和覆盖变量
 
 ```text
-./scripts/install.sh [--refresh-clawgod] [--gateway-only]
+./scripts/install.sh [--with-clawgod] [--refresh-clawgod] [--gateway-only]
+.\scripts\install.ps1 [-WithClawGod] [-RefreshClawGod] [-GatewayOnly]
 ```
 
 | 参数或变量 | 作用 |
 | --- | --- |
-| `--refresh-clawgod` | 在相同校验和隔离边界内重新生成 ClawGod runtime |
-| `--gateway-only` | 围绕显式 `CLAWGOD_BIN` 构建网关和 `claude-kiro` 启动器 |
+| `--with-clawgod` / `-WithClawGod` | 显式选择锁定的隔离 ClawGod runtime |
+| `--refresh-clawgod` / `-RefreshClawGod` | 重新生成并自动选择 ClawGod |
+| `--gateway-only` / `-GatewayOnly` | 兼容旧高级用法，围绕显式 `CLAWGOD_BIN` 安装并自动选择 ClawGod |
 | `CLAWGOD_BIN` | gateway-only 模式使用的现有 ClawGod 启动器 |
 | `CLAWGOD_RELEASE` | ClawGod Release Tag，默认 `v1.7.5` |
 | `CLAWGOD_INSTALLER_SHA256` | 更换 Release 时必须提供的预期校验值 |
-| `CLAWGOD_KIROCC_INSTALL_ROOT` | runtime 根目录，默认 `~/.local/share/clawgod-kirocc` |
+| `CLAUDE_KIRO_RUNTIME_BIN` | 覆盖 `claude-kiro` 使用的官方或 Patch runtime |
+| `CLAWGOD_KIROCC_INSTALL_ROOT` | runtime 根目录，使用上表所示 OS 默认值 |
 | `CLAWGOD_KIROCC_STATE_ROOT` | 状态根目录，默认 `~/.clawgod-kirocc` |
 | `CLAWGOD_KIROCC_BIN_DIR` | 启动器目录，默认 `~/.local/bin` |
 | `KIROCC_PORT` | 启动器管理的网关端口，默认 `3457` |
@@ -245,8 +303,19 @@ CLAWGOD_BIN=/绝对路径/clawgod ./scripts/install.sh --gateway-only
 
 ```bash
 git pull --ff-only
-./scripts/install.sh --refresh-clawgod
+./scripts/install.sh                    # 默认官方 runtime
+./scripts/install.sh --refresh-clawgod # 已选择 ClawGod
 ```
+
+Windows PowerShell：
+
+```powershell
+git pull --ff-only
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -RefreshClawGod
+```
+
+只有当前选择 ClawGod runtime 时才运行最后一条。
 
 卸载但保留配置和会话状态：
 
@@ -260,6 +329,9 @@ git pull --ff-only
 ./scripts/uninstall.sh --purge-state
 ```
 
+Windows 对应命令为 `.\scripts\uninstall.ps1` 和
+`.\scripts\uninstall.ps1 -PurgeState`。
+
 ## 主要功能
 
 - **Anthropic Messages API 兼容**：支持 `/v1/messages`（流式/非流式）、`/v1/messages/count_tokens` 和 `/v1/models`。
@@ -269,7 +341,7 @@ git pull --ff-only
 - **扩展思考**：支持 `[1m]`、`thinking` 和 `output_config.effort`，原生转发并按模型枚举校验/收敛 effort。
 - **Tool Search**：在代理侧实现 regex/BM25 Tool Search 和 `defer_loading` 按需工具发现。
 - **Kiro 原生 WebSearch**：把 `web_search_20250305` 映射到 Kiro MCP，支持 JSON、SSE、重试、Token Count 和 server-tool usage。
-- **隔离 ClawGod 配置**：独立命令、状态、配置、网关、端口和更新边界，不修改官方 `claude`。
+- **隔离 runtime 配置**：默认围绕官方 Claude Code 提供独立命令、状态、配置、网关、端口和更新边界；ClawGod 为显式可选，不修改官方 `claude`。
 - **Prompt Cache**：把 Anthropic 工具级 `cache_control` 转换为 Kiro `cachePoint`。
 - **截断检测与重试**：记录截断结果；对 403、429、5xx 和仅含 thinking 的空可见响应重试。
 - **SSE Keep-alive**：默认每 15 秒为长时间无输出的流发送注释心跳。
@@ -278,7 +350,7 @@ git pull --ff-only
 
 ## 仅安装网关
 
-如果只需要 Anthropic → Kiro 网关而不需要 ClawGod 隔离配置：
+如果只需要 Anthropic → Kiro 网关，不需要受管理的 `claude-kiro` 配置：
 
 ```bash
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -299,15 +371,16 @@ claude-kiro
 
 启动器会设置独立 `CLAUDE_CONFIG_DIR`，把 `ANTHROPIC_BASE_URL` 指向本地网关，
 清除可能冲突的 Anthropic/Bedrock/Vertex/Foundry Provider 变量，然后把全部参数
-转交给 ClawGod。
+转交给已选择的 runtime：默认是官方 Claude Code，显式安装后才是 ClawGod。
 
 运行时覆盖变量：
 
 | 变量 | 作用 |
 | --- | --- |
 | `KIROCC_BIN` | 指定另一个带 Patch 的网关二进制 |
-| `CLAWGOD_BIN` | 指定另一个显式 ClawGod 启动器 |
-| `CLAWGOD_KIROCC_CONFIG_DIR` | 指定另一个独立 Claude 配置目录 |
+| `CLAUDE_KIRO_RUNTIME_BIN` | 指定另一个官方或 Patch runtime |
+| `CLAWGOD_BIN` | 指定 ClawGod runtime 的兼容别名 |
+| `CLAUDE_KIRO_CONFIG_DIR` / `CLAWGOD_KIROCC_CONFIG_DIR` | 指定另一个独立 Claude 配置目录 |
 | `KIROCC_PORT` | 启动器自行启动网关时使用的端口 |
 | `KIROCC_URL` | 复用已有网关 URL，替代默认 `http://127.0.0.1:$KIROCC_PORT` |
 | `KIROCC_API_KEY` | 保护本地网关，并作为 Claude 访问本地代理的 Token |
@@ -370,6 +443,7 @@ Kiro CLI 默认数据库：
 | --- | --- |
 | macOS | `~/Library/Application Support/kiro-cli/data.sqlite3` |
 | Linux | `~/.local/share/kiro-cli/data.sqlite3` |
+| Windows | `%USERPROFILE%\.local\share\kiro-cli\data.sqlite3`；启动器还会探测 `%LOCALAPPDATA%` 和 `%APPDATA%` |
 
 ### 网关环境变量
 
@@ -573,8 +647,8 @@ Kiro 推理后端不原生支持 Anthropic Tool Search，因此由网关实现�
 
 ## 已知边界
 
-- 完整 ClawGod 隔离安装器当前面向 macOS/Linux；单独 Go 网关是否可在其他
-  平台构建，不代表完整配置已在该平台验收。
+- Windows 原生支持面向 Windows 11 x64。CI 会解析 PowerShell、运行 Windows
+  Go 测试并构建 PE 文件，但带真实凭据的 Windows 全新安装 E2E 仍取决于环境。
 - 原生 WebSearch 与其他客户端 Tool 混合的手工请求返回 HTTP 400。
 - `count_tokens` 是近似值，不等同 Claude 官方 Tokenizer。
 - Computer Use、Ultraplan、Ultrareview 等入口虽然被 ClawGod 解锁，实际能力仍
@@ -587,15 +661,15 @@ Kiro 推理后端不原生支持 Anthropic Tool Search，因此由网关实现�
 
 | 现象 | 检查或处理 |
 | --- | --- |
-| `claude-kiro: command not found` | 把 `~/.local/bin` 加入 `PATH`，再运行 `command -v claude-kiro` |
-| 安装器提示缺少依赖 | 完整配置需要 `go`、`curl`、`node`、`bun`、`rg` |
+| `claude-kiro: command not found` | 把用户 `.local/bin` 加入 `PATH`；Windows 安装后请打开新终端 |
+| 安装器提示缺少依赖 | 默认模式需要 Go/Node，macOS/Linux 另需 curl；只有 ClawGod 模式需要 Bun/ripgrep/SHA-256 工具 |
 | 找不到官方 Claude Code | 先确认 `command -v claude` 有结果，再重新安装 |
 | 网关启动失败 | 查看 `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`；端口冲突时使用 `KIROCC_PORT=3458` |
 | Kiro 返回 401/403 | 重新登录 Kiro CLI，或检查 `KIRO_API_KEY`/`KIRO_API_REGION`；不要误用 `KIROCC_API_KEY` |
 | WebSearch 仍出现旧的 Schema 502 | 确认启动的是 `claude-kiro`，重跑安装器，并确认网关文件为 `kirocc-native-websearch` |
 | 原生 WebSearch 返回 HTTP 400 | 不要在手工请求中把 `web_search_20250305` 与客户端 Tool 混合 |
-| `claude-kiro update` 被拦截 | 这是预期行为；执行 `git pull --ff-only` 后运行 `./scripts/install.sh --refresh-clawgod` |
-| 界面不是绿色 | 确认运行的是 `claude-kiro` 而非官方 `claude`；路径正确时刷新隔离 runtime |
+| `claude-kiro update` 被拦截 | 这是预期行为；拉取仓库后重跑安装器，仅在 ClawGod 模式增加 refresh 参数 |
+| 界面不是绿色 | 默认官方 runtime 模式本来就不是绿色；必须使用 `--with-clawgod` / `-WithClawGod` |
 | Skills/MCP/历史为空 | 这是配置隔离的结果；只选择性复制需要的配置到 `~/.clawgod-kirocc/claude-config`，不要整体软链接官方 Profile |
 
 ## 安全与数据处理
@@ -620,10 +694,12 @@ GOEXPERIMENT=jsonv2 go vet ./...
 bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh
 ./scripts/doctor.sh --help >/dev/null
 python3 -m json.tool config/settings.json >/dev/null
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -o /tmp/kirocc.exe ./cmd/kirocc
 ```
 
 `make test` 会执行 `go test -race ./...`。CI 还会运行 `go mod tidy`、
-`go fix`、集成文件校验和 golangci-lint。
+`go fix`、集成文件校验和 golangci-lint；Windows Job 会解析全部 PowerShell、
+运行 Go 测试并构建 Windows 网关。
 
 macOS arm64 验证快照（2026-08-03）：
 

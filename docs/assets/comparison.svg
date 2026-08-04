@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
   <title id="title">ClawGod KiroCC feature comparison</title>
-  <desc id="desc">A comparison of official Claude Code, ClawGod, upstream kirocc, and ClawGod KiroCC across Kiro backend support, ClawGod patches, native WebSearch, profile isolation, and preservation of the official Claude command.</desc>
+  <desc id="desc">A comparison of official Claude Code, ClawGod, upstream kirocc, and ClawGod KiroCC across Kiro backend support, optional ClawGod patches, native WebSearch, profile isolation, Windows support, and preservation of the official Claude command.</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#07120d"/>
@@ -30,7 +30,7 @@
 
   <g class="ui">
     <text x="72" y="72" class="heading" font-size="34">ClawGod KiroCC</text>
-    <text x="72" y="108" class="muted" font-size="20">Native Kiro WebSearch · isolated launcher · ClawGod runtime</text>
+    <text x="72" y="108" class="muted" font-size="20">Native Kiro WebSearch · Windows support · optional ClawGod</text>
     <rect x="72" y="126" width="1056" height="4" rx="2" fill="url(#accent)"/>
 
     <g filter="url(#shadow)">
@@ -45,7 +45,7 @@
     <text x="860" y="198" class="heading" font-size="16" text-anchor="middle">Upstream</text>
     <text x="860" y="220" class="muted" font-size="14" text-anchor="middle">kirocc 0.6.0</text>
     <text x="1030" y="198" fill="#86efac" font-size="16" font-weight="800" text-anchor="middle">This fork</text>
-    <text x="1030" y="220" fill="#5ee38e" font-size="14" text-anchor="middle">ClawGod KiroCC</text>
+    <text x="1030" y="220" fill="#5ee38e" font-size="14" text-anchor="middle">official + opt-in</text>
 
     <g stroke="#284333" stroke-width="1">
       <line x1="82" y1="242" x2="1118" y2="242"/>
@@ -69,7 +69,7 @@
     <text x="490" y="347" class="no" text-anchor="middle">—</text>
     <text x="675" y="347" class="yes" text-anchor="middle">✓</text>
     <text x="860" y="347" class="no" text-anchor="middle">—</text>
-    <text x="1030" y="347" class="yes" text-anchor="middle">✓</text>
+    <text x="1030" y="347" class="partial" text-anchor="middle">opt-in</text>
 
     <text x="490" y="411" class="no" text-anchor="middle">—</text>
     <text x="675" y="411" class="no" text-anchor="middle">—</text>

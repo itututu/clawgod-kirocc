@@ -9,6 +9,8 @@ Kiro endpoints and must never be committed to this repository.
 The following generated paths are local-only and are not project artifacts:
 
 - `~/.clawgod-kirocc/`
+- `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\`
+- `%USERPROFILE%\.clawgod-kirocc\`
 - `~/.claude/` and any configured `CLAUDE_CONFIG_DIR`
 - Kiro CLI `data.sqlite3`
 - generated `cli.cjs`, provider files, histories, logs, and access tokens

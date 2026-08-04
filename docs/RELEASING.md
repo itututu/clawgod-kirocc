@@ -10,13 +10,16 @@ release notes.
 
 ## Artifact boundary
 
-GoReleaser publishes standalone `kirocc` gateway binaries for macOS and Linux
-on amd64 and arm64. Those archives do not contain Claude Code, ClawGod runtime
+GoReleaser publishes standalone `kirocc` gateway binaries for macOS, Linux,
+and Windows on amd64 and arm64. Windows artifacts use ZIP; macOS/Linux use
+tar.gz. Those archives do not contain Claude Code, ClawGod runtime
 files, credentials, or the complete-profile installer output.
 
 Users who want `claude-kiro` must clone the source and run
-`./scripts/install.sh`; the installer downloads the pinned ClawGod installer,
-verifies its checksum, and generates the isolated runtime locally.
+`./scripts/install.sh` (or `scripts\install.ps1` on Windows). The default uses
+official Claude Code; when ClawGod is explicitly selected, the installer
+downloads the pinned platform installer, verifies its checksum, and generates
+the isolated runtime locally.
 
 ## Tag scheme
 
@@ -64,6 +67,7 @@ fork release number only if that lineage is clear in the release notes.
    ./scripts/doctor.sh --help >/dev/null
    python3 -m json.tool config/settings.json >/dev/null
    xmllint --noout docs/assets/comparison.svg
+   GOOS=windows GOARCH=amd64 CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -o /tmp/kirocc.exe ./cmd/kirocc
    ```
 
 5. Push the release-preparation commit and wait for CI to pass on that exact
@@ -99,6 +103,6 @@ ambiguous releases.
 - [ ] GitHub CI passes on the exact commit.
 - [ ] The maintainer explicitly approved the version and publication.
 - [ ] Only the single fork tag was pushed.
-- [ ] GoReleaser completed for all four OS/architecture targets.
+- [ ] GoReleaser completed for all six OS/architecture targets.
 - [ ] Checksums and extracted `kirocc --help` were verified.
 - [ ] GitHub Release notes were replaced with the reviewed markdown.

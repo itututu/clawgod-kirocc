@@ -17,6 +17,7 @@ Describe the problem and the smallest implemented change.
 - [ ] `bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh`
 - [ ] `./scripts/doctor.sh --help`
 - [ ] `python3 -m json.tool config/settings.json`
+- [ ] Windows PowerShell parse/Go test job (when cross-platform files change)
 - [ ] Live validation, if claimed, is described below with credentials redacted
 
 ## Safety and documentation

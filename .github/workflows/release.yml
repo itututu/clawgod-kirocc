@@ -34,8 +34,59 @@ jobs:
       - name: Run tests
         run: go test -race ./...
 
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Validate and test Windows support
+        shell: pwsh
+        run: |
+          $files = @(
+            "scripts/install.ps1",
+            "scripts/doctor.ps1",
+            "scripts/uninstall.ps1",
+            "scripts/windows/claude-kiro.ps1"
+          )
+          foreach ($file in $files) {
+            [scriptblock]::Create((Get-Content $file -Raw)) | Out-Null
+          }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Help
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\doctor.ps1 -Help
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1 -Help
+          go test ./...
+      - name: Smoke-test default Windows install without ClawGod
+        shell: pwsh
+        run: |
+          $smokeRoot = Join-Path $env:RUNNER_TEMP "clawgod-kirocc-smoke"
+          $fakeBin = Join-Path $smokeRoot "fake-bin"
+          $userBin = Join-Path $smokeRoot "user-bin"
+          $installRoot = Join-Path $smokeRoot "install\clawgod-kirocc"
+          $stateRoot = Join-Path $smokeRoot "state\.clawgod-kirocc"
+          New-Item -ItemType Directory -Force -Path $fakeBin | Out-Null
+          Set-Content -Path (Join-Path $fakeBin "claude.cmd") -Encoding ASCII -Value "@echo off`r`nexit /b 0"
+          $env:PATH = "$fakeBin;$env:PATH"
+          $env:CLAWGOD_KIROCC_INSTALL_ROOT = $installRoot
+          $env:CLAWGOD_KIROCC_STATE_ROOT = $stateRoot
+          $env:CLAWGOD_KIROCC_BIN_DIR = $userBin
+          $env:KIROCC_PORT = "45678"
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+          if ($LASTEXITCODE -ne 0) { throw "Windows PowerShell installer failed" }
+          $env:PATH = "$userBin;$env:PATH"
+          if ((Get-Content (Join-Path $installRoot "install-mode") -Raw).Trim() -ne "official") {
+            throw "default Windows installer did not select official runtime"
+          }
+          if (Test-Path (Join-Path $installRoot "clawgod")) {
+            throw "default Windows installer unexpectedly created ClawGod files"
+          }
+          & (Join-Path $userBin "claude-kiro.cmd") --version
+          if ($LASTEXITCODE -ne 0) { throw "default Windows launcher failed" }
+
   release:
-    needs: ci
+    needs: [ci, windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

@@ -29,8 +29,84 @@ jobs:
           bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh
           ./scripts/doctor.sh --help >/dev/null
           python3 -m json.tool config/settings.json >/dev/null
+      - name: Smoke-test default Linux install without ClawGod
+        run: |
+          smoke_root="$(mktemp -d)"
+          trap 'rm -rf "$smoke_root"' EXIT
+          mkdir -p "$smoke_root/fake-bin" "$smoke_root/user-bin"
+          ln -s /usr/bin/true "$smoke_root/fake-bin/claude"
+          export PATH="$smoke_root/fake-bin:$smoke_root/user-bin:$PATH"
+          export CLAWGOD_KIROCC_INSTALL_ROOT="$smoke_root/install/clawgod-kirocc"
+          export CLAWGOD_KIROCC_STATE_ROOT="$smoke_root/state/.clawgod-kirocc"
+          export CLAWGOD_KIROCC_BIN_DIR="$smoke_root/user-bin"
+          export KIROCC_PORT=45678
+          ./scripts/install.sh
+          test "$(cat "$CLAWGOD_KIROCC_INSTALL_ROOT/install-mode")" = official
+          test ! -d "$CLAWGOD_KIROCC_INSTALL_ROOT/clawgod"
+          claude-kiro --version
+          export KIRO_API_KEY=ksk_ci_placeholder
+          export KIRO_API_REGION=us-east-1
+          ./scripts/doctor.sh
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12.2
       - name: Run tests
         run: go test -race ./...
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Validate PowerShell integration files
+        shell: pwsh
+        run: |
+          $files = @(
+            "scripts/install.ps1",
+            "scripts/doctor.ps1",
+            "scripts/uninstall.ps1",
+            "scripts/windows/claude-kiro.ps1"
+          )
+          foreach ($file in $files) {
+            [scriptblock]::Create((Get-Content $file -Raw)) | Out-Null
+          }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Help
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\doctor.ps1 -Help
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1 -Help
+          Get-Content config/settings.json -Raw | ConvertFrom-Json | Out-Null
+      - name: Run Windows tests
+        run: go test ./...
+      - name: Build Windows gateway
+        run: go build -trimpath -o "$env:RUNNER_TEMP/kirocc-native-websearch.exe" ./cmd/kirocc
+      - name: Smoke-test default Windows install without ClawGod
+        shell: pwsh
+        run: |
+          $smokeRoot = Join-Path $env:RUNNER_TEMP "clawgod-kirocc-smoke"
+          $fakeBin = Join-Path $smokeRoot "fake-bin"
+          $userBin = Join-Path $smokeRoot "user-bin"
+          $installRoot = Join-Path $smokeRoot "install\clawgod-kirocc"
+          $stateRoot = Join-Path $smokeRoot "state\.clawgod-kirocc"
+          New-Item -ItemType Directory -Force -Path $fakeBin | Out-Null
+          Set-Content -Path (Join-Path $fakeBin "claude.cmd") -Encoding ASCII -Value "@echo off`r`nexit /b 0"
+          $env:PATH = "$fakeBin;$env:PATH"
+          $env:CLAWGOD_KIROCC_INSTALL_ROOT = $installRoot
+          $env:CLAWGOD_KIROCC_STATE_ROOT = $stateRoot
+          $env:CLAWGOD_KIROCC_BIN_DIR = $userBin
+          $env:KIROCC_PORT = "45678"
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+          if ($LASTEXITCODE -ne 0) { throw "Windows PowerShell installer failed" }
+          $env:PATH = "$userBin;$env:PATH"
+          if ((Get-Content (Join-Path $installRoot "install-mode") -Raw).Trim() -ne "official") {
+            throw "default Windows installer did not select official runtime"
+          }
+          if (Test-Path (Join-Path $installRoot "clawgod")) {
+            throw "default Windows installer unexpectedly created ClawGod files"
+          }
+          & (Join-Path $userBin "claude-kiro.cmd") --version
+          if ($LASTEXITCODE -ne 0) { throw "default Windows launcher failed" }
+          $env:KIRO_API_KEY = "ksk_ci_placeholder"
+          $env:KIRO_API_REGION = "us-east-1"
+          ./scripts/doctor.ps1

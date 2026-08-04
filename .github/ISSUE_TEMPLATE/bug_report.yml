@@ -37,8 +37,9 @@ body:
     attributes:
       label: Installation mode
       options:
-        - Complete profile
-        - Gateway only
+        - Managed profile (official runtime)
+        - Managed profile (ClawGod opt-in)
+        - Existing ClawGod runtime (gateway-only option)
         - Standalone gateway
         - Other
     validations:

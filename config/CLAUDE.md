@@ -1,4 +1,4 @@
-# ClawGod KiroCC runtime profile
+# KiroCC isolated runtime profile
 
 - Prefer Claude Code's built-in `WebSearch` tool for internet research. The local gateway maps it to Kiro's native MCP web search endpoint.
 - When native WebSearch reports an upstream failure, use an explicitly configured search MCP only as a fallback.

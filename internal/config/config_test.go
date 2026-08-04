@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -137,13 +138,19 @@ func TestDefaultDBPathFor(t *testing.T) {
 			name: "darwin",
 			goos: "darwin",
 			home: "/Users/dkuro",
-			want: "/Users/dkuro/Library/Application Support/kiro-cli/data.sqlite3",
+			want: filepath.Join("/Users/dkuro", "Library", "Application Support", "kiro-cli", "data.sqlite3"),
 		},
 		{
 			name: "linux",
 			goos: "linux",
 			home: "/home/dkuro",
-			want: "/home/dkuro/.local/share/kiro-cli/data.sqlite3",
+			want: filepath.Join("/home/dkuro", ".local", "share", "kiro-cli", "data.sqlite3"),
+		},
+		{
+			name: "windows",
+			goos: "windows",
+			home: `C:\Users\dkuro`,
+			want: filepath.Join(`C:\Users\dkuro`, ".local", "share", "kiro-cli", "data.sqlite3"),
 		},
 	}
 

@@ -8,8 +8,10 @@ pre-release tags based on the upstream kirocc version.
 
 ### Added
 
-- An isolated `claude-kiro` launcher and configuration profile that leave the
-  official `claude` command untouched.
+- An isolated `claude-kiro` launcher and configuration profile that use the
+  official Claude Code runtime by default and leave `claude` untouched.
+- Native Windows 11 x64 PowerShell install, launcher, doctor, uninstall, CI,
+  and release support.
 - A pinned, checksum-verified ClawGod v1.7.5 installation flow with generated
   runtime files kept outside Git.
 - Kiro-native WebSearch translation for Anthropic server-tool requests,
@@ -22,12 +24,16 @@ pre-release tags based on the upstream kirocc version.
 
 ### Changed
 
+- ClawGod is now an explicit optional component selected with
+  `--with-clawgod` / `-WithClawGod`; it is no longer downloaded by default.
 - The managed gateway uses port `3457` by default to avoid the upstream
   standalone default on `3456`.
 - The installer accepts either `shasum` or `sha256sum` for macOS/Linux
   checksum verification.
 - The release workflow accepts fork tags matching `v*-clawgod.*`; inherited
   upstream tags must not be republished.
+- GoReleaser publishes Windows binaries as ZIP archives in addition to the
+  macOS/Linux tarballs.
 
 ### Security
 

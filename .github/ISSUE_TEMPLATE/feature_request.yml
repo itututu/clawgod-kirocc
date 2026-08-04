@@ -29,7 +29,7 @@ body:
         - Kiro gateway or protocol
         - Native WebSearch
         - ClawGod isolation or launcher
-        - Installer or diagnostics
+        - Cross-platform installer or diagnostics
         - Documentation
         - Other
     validations:

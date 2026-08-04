@@ -6,13 +6,14 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![ClawGod](https://img.shields.io/badge/ClawGod-v1.7.5-16a34a.svg)](https://github.com/0Chencc/clawgod/releases/tag/v1.7.5)
 
-An isolated Claude Code + ClawGod launch profile backed by Kiro credentials,
-with Kiro-native WebSearch support added to the excellent
+An isolated Claude Code launch profile backed by Kiro credentials, with
+optional ClawGod patches and Kiro-native WebSearch support added to the excellent
 [kirocc](https://github.com/d-kuro/kirocc) gateway.
 
 This downstream project keeps the official `claude` command untouched. It
 installs an explicit `claude-kiro` launcher, its own configuration directory,
-an isolated ClawGod runtime, and a patched gateway on port `3457`.
+and a patched gateway on port `3457`. The default mode uses the official Claude
+Code runtime; ClawGod is installed only when explicitly selected.
 
 > This project is not affiliated with Anthropic, Amazon, Kiro, d-kuro, or
 > ClawGod. It does not contain Claude Code binaries, extracted source, private
@@ -27,7 +28,7 @@ provider files, or Claude session logs.
 ## Documentation map
 
 - [Why this fork exists](#why-this-fork-exists) and [comparison](#comparison)
-- [ClawGod capabilities](#clawgod-capabilities-included) and [prompt behavior](#prompt-behavior)
+- [Optional ClawGod capabilities](#optional-clawgod-capabilities) and [prompt behavior](#prompt-behavior)
 - [Installation, verification, update, and uninstall](#installation-and-lifecycle)
 - [Features](#features), [gateway-only installation](#gateway-only-installation), and [usage](#usage)
 - [Endpoints](#endpoints), [architecture](#architecture), and feature deep dives
@@ -54,43 +55,52 @@ the same `tool_use_id` as the server tool call.
 Verified snapshot: Claude Code 2.1.220, ClawGod 1.7.5, kirocc 0.6.0, and Kiro
 CLI 2.16.0 on macOS arm64 (2026-08-03).
 
+The last comparison column describes the opt-in `--with-clawgod` profile. The
+default install keeps the same Kiro/WebSearch/isolation features without the
+ClawGod client patches.
+
 ![ClawGod KiroCC comparison](docs/assets/comparison.svg)
 
 | Capability | Official Claude Code | ClawGod only | Upstream kirocc 0.6.0 | ClawGod KiroCC |
 | --- | :---: | :---: | :---: | :---: |
-| Official Claude Code tool/runtime behavior | ✅ | ✅ patched | ✅ via API adapter | ✅ patched |
+| Official Claude Code tool/runtime behavior | ✅ | ✅ patched | ✅ via API adapter | ✅ default / patched opt-in |
 | Kiro CLI credential backend | — | — | ✅ | ✅ |
 | Extended thinking / native effort | Provider-dependent | Provider-dependent | ✅ | ✅ |
 | Anthropic Tool Search emulation | Provider-dependent | Provider-dependent | ✅ | ✅ |
 | Built-in WebSearch through Kiro MCP | — | — | ❌ schema 502 | ✅ |
 | Streaming WebSearch contract | Provider-dependent | Provider-dependent | ❌ | ✅ |
+| Native Windows 11 x64 managed profile | ✅ | ✅ | Manual gateway | ✅ |
 | Separate command and config profile | Native profile | Replaces/aliases launcher by default | Manual | ✅ `claude-kiro` |
 | Leaves the official `claude` path untouched by this installer | ✅ | ❌ by default | ✅ | ✅ |
 | Search MCP fallback can coexist | Manual | Manual | Manual | ✅ |
-| ClawGod client-side feature unlocks and restriction patches | — | ✅ | — | ✅ |
+| ClawGod client-side feature unlocks and restriction patches | — | ✅ | — | ✅ opt-in |
 | Bypasses provider-side quota, auth, billing, or model access | ❌ | ❌ | ❌ | ❌ |
 
 ```mermaid
 flowchart LR
     Official["Official claude command<br/>untouched"]
     Launcher["claude-kiro<br/>isolated config"]
-    ClawGod["ClawGod runtime<br/>official prompt chain + patches"]
+    OfficialRuntime["Official Claude runtime<br/>default"]
+    ClawGod["ClawGod runtime<br/>optional patches"]
     Gateway["patched kirocc<br/>localhost:3457"]
     Runtime["Kiro inference<br/>runtime.region.kiro.dev"]
     Search["Kiro native WebSearch<br/>q.region.amazonaws.com/mcp"]
 
     Official -. "separate" .- Launcher
+    Launcher --> OfficialRuntime
     Launcher --> ClawGod
+    OfficialRuntime --> Gateway
     ClawGod --> Gateway
     Gateway --> Runtime
     Gateway --> Search
 ```
 
-## ClawGod capabilities included
+## Optional ClawGod capabilities
 
-This project installs the pinned ClawGod v1.7.5 runtime patch with
-`--lean-off`, so the full Claude Code tool set remains enabled inside the
-isolated `claude-kiro` profile.
+Run the installer with `--with-clawgod` (PowerShell: `-WithClawGod`) to install
+the pinned ClawGod v1.7.5 runtime patch with Lean mode off. Without that option,
+`claude-kiro` uses the official Claude Code runtime and none of the patch groups
+in this section are applied.
 
 | ClawGod patch group | Included behavior in `claude-kiro` |
 | --- | --- |
@@ -124,7 +134,7 @@ refresh keeps the isolated paths and checksum verification; use
 
 ## Prompt behavior
 
-ClawGod still runs Claude Code's built-in system-prompt pipeline. This project
+When selected, ClawGod still runs Claude Code's built-in system-prompt pipeline. This project
 does not copy or publish that proprietary prompt. The isolated profile adds the
 original, auditable [`config/CLAUDE.md`](config/CLAUDE.md) after the built-in
 instructions to describe WebSearch routing, source-link expectations, update
@@ -134,13 +144,21 @@ isolation, credential hygiene, and verification rules.
 
 ### Prerequisites
 
-- macOS or Linux
-- Go 1.26+, Node.js 18+, Bun, curl, ripgrep, and either `shasum` or `sha256sum`
+- macOS, Linux, or native Windows 11 x64
+- Go 1.26+ and Node.js 18+
 - Kiro CLI installed and logged in, or a Kiro API key and region
 - an official Claude Code installation (used locally; never copied into this repository)
-- `~/.local/bin` on `PATH`
+- macOS/Linux: curl
+- optional ClawGod mode only: Bun 1.3.14+, ripgrep, and either `shasum` or `sha256sum`
+- the per-user `.local/bin` directory on `PATH` (the Windows installer adds it)
 
-### Install the complete profile
+Kiro CLI's native Windows distribution currently targets Windows 11 x64.
+Standalone KiroCC release binaries may run elsewhere, but that does not prove
+the complete authenticated profile is supported there.
+
+### Default install: official Claude Code runtime
+
+macOS/Linux:
 
 ```bash
 git clone https://github.com/itututu/clawgod-kirocc.git
@@ -149,22 +167,52 @@ cd clawgod-kirocc
 claude-kiro
 ```
 
-The installer builds the patched gateway, downloads the pinned ClawGod v1.7.5
-installer over HTTPS, verifies SHA-256
-`4a943439ae8cb858e69279d19f0d3a979968fc0a9e4c42e1d1018ae76657ce82`,
-applies temporary isolation-path overrides, and generates the runtime locally.
-It never creates, replaces, or deletes the official `claude` command.
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/itututu/clawgod-kirocc.git
+Set-Location clawgod-kirocc
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+claude-kiro
+```
+
+The default installer builds the patched gateway and creates an isolated
+`claude-kiro` profile around the already-installed official Claude Code runtime.
+It does not download ClawGod and does not create, replace, rename, or delete the
+official `claude` command.
+
+### Opt in to ClawGod
+
+macOS/Linux:
+
+```bash
+./scripts/install.sh --with-clawgod
+```
+
+Windows PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -WithClawGod
+```
+
+Opt-in mode downloads the pinned ClawGod v1.7.5 installer, verifies its
+platform-specific SHA-256, patches only the temporary installer copy with
+isolation overrides, and generates ClawGod locally. The pinned installer hashes
+are:
+
+- macOS/Linux `install.sh`: `4a943439ae8cb858e69279d19f0d3a979968fc0a9e4c42e1d1018ae76657ce82`
+- Windows `install.ps1`: `bf2a9947f5f5747ceaf0ebc77f8f0c66887a2c390e7e996c28b6c72b5b579d3e`
 
 ### Installed layout
 
-| Path | Purpose |
-| --- | --- |
-| `~/.local/bin/claude-kiro` | Explicit launcher; starts/reuses the gateway and then runs isolated ClawGod |
-| `~/.local/share/clawgod-kirocc/bin/kirocc-native-websearch` | Patched Go gateway |
-| `~/.local/share/clawgod-kirocc/clawgod/` | Isolated ClawGod launchers and local runtime references |
-| `~/.clawgod-kirocc/` | Generated ClawGod runtime, vendor files, and isolated state |
-| `~/.clawgod-kirocc/claude-config/` | Isolated Claude settings, sessions, projects, and additive `CLAUDE.md` |
-| `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-3457.log` | Launcher-managed gateway startup log for the default port |
+| Purpose | macOS/Linux | Windows |
+| --- | --- | --- |
+| Explicit launcher | `~/.local/bin/claude-kiro` | `%USERPROFILE%\.local\bin\claude-kiro.cmd` |
+| Patched gateway | `~/.local/share/clawgod-kirocc/bin/kirocc-native-websearch` | `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\bin\kirocc-native-websearch.exe` |
+| Optional ClawGod files | `~/.local/share/clawgod-kirocc/clawgod/` | `%LOCALAPPDATA%\ClawGodKiroCC\clawgod-kirocc\clawgod\` |
+| Isolated state | `~/.clawgod-kirocc/` | `%USERPROFILE%\.clawgod-kirocc\` |
+| Isolated Claude config | `~/.clawgod-kirocc/claude-config/` | `%USERPROFILE%\.clawgod-kirocc\claude-config\` |
+| Gateway logs | `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-*` | `%TEMP%\clawgod-kirocc-gateway-*` |
 
 The default launcher port is `3457`; standalone `kirocc` defaults to `3456`.
 If a healthy gateway already answers at `KIROCC_URL`, the launcher reuses it.
@@ -172,6 +220,8 @@ Otherwise it starts one for the lifetime of the `claude-kiro` process and stops
 that child gateway on exit.
 
 ### Verify the installation
+
+macOS/Linux:
 
 ```bash
 ./scripts/doctor.sh
@@ -181,31 +231,45 @@ claude --version
 claude-kiro --version
 ```
 
+Windows PowerShell:
+
+```powershell
+.\scripts\doctor.ps1
+Get-Command claude
+Get-Command claude-kiro
+claude --version
+claude-kiro --version
+```
+
 The doctor is read-only: it does not print credentials, modify configuration,
 start Claude Code, or start/stop the gateway. A gateway-health warning is
 normal while `claude-kiro` is closed. Use `./scripts/doctor.sh --strict` in
 automation when warnings should also produce a non-zero exit status.
 
-The first two paths must be different. The official command should retain its
-normal branding; `claude-kiro` should show ClawGod's green patched branding when
-run interactively. A version command can exit before there is time to inspect
+The two command paths must be different. In the default mode both commands use
+the official runtime, but only `claude-kiro` uses the isolated Kiro-backed
+profile. Green ClawGod branding appears only after selecting ClawGod. A version
+command can exit before there is time to inspect
 the managed health endpoint, so check `http://127.0.0.1:3457/health` only while
 an interactive `claude-kiro` session is open.
 
 ### Installer options and overrides
 
 ```text
-./scripts/install.sh [--refresh-clawgod] [--gateway-only]
+./scripts/install.sh [--with-clawgod] [--refresh-clawgod] [--gateway-only]
+.\scripts\install.ps1 [-WithClawGod] [-RefreshClawGod] [-GatewayOnly]
 ```
 
 | Option or variable | Purpose |
 | --- | --- |
-| `--refresh-clawgod` | Rebuild the isolated ClawGod runtime with the same checksum and path checks |
-| `--gateway-only` | Build the gateway and launcher around an explicit `CLAWGOD_BIN` |
+| `--with-clawgod` / `-WithClawGod` | Opt in to the pinned isolated ClawGod runtime |
+| `--refresh-clawgod` / `-RefreshClawGod` | Rebuild ClawGod and implicitly select it |
+| `--gateway-only` / `-GatewayOnly` | Legacy advanced mode around an explicit `CLAWGOD_BIN`; implicitly selects ClawGod |
 | `CLAWGOD_BIN` | Existing explicit ClawGod launcher used by gateway-only mode |
 | `CLAWGOD_RELEASE` | ClawGod release tag; defaults to `v1.7.5` |
 | `CLAWGOD_INSTALLER_SHA256` | Required expected checksum when changing the release tag |
-| `CLAWGOD_KIROCC_INSTALL_ROOT` | Runtime root; defaults to `~/.local/share/clawgod-kirocc` |
+| `CLAUDE_KIRO_RUNTIME_BIN` | Override the runtime used by `claude-kiro` without changing official `claude` |
+| `CLAWGOD_KIROCC_INSTALL_ROOT` | Runtime root; defaults to the OS-specific path above |
 | `CLAWGOD_KIROCC_STATE_ROOT` | State root; defaults to `~/.clawgod-kirocc` |
 | `CLAWGOD_KIROCC_BIN_DIR` | Launcher directory; defaults to `~/.local/bin` |
 | `KIROCC_PORT` | Managed gateway port; defaults to `3457` |
@@ -223,8 +287,19 @@ would escape the checksum and isolation boundary. Update through this repository
 
 ```bash
 git pull --ff-only
-./scripts/install.sh --refresh-clawgod
+./scripts/install.sh                    # default official-runtime mode
+./scripts/install.sh --refresh-clawgod # selected ClawGod mode
 ```
+
+Windows PowerShell:
+
+```powershell
+git pull --ff-only
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -RefreshClawGod
+```
+
+Run only the last command when the selected runtime is ClawGod.
 
 Remove binaries while preserving the isolated state:
 
@@ -238,6 +313,9 @@ Delete the isolated configuration, projects, and session state as well:
 ./scripts/uninstall.sh --purge-state
 ```
 
+Windows equivalents are `.\scripts\uninstall.ps1` and
+`.\scripts\uninstall.ps1 -PurgeState`.
+
 ## Features
 
 - **Anthropic Messages API compatible** — Supports `/v1/messages` (streaming / non-streaming), `/v1/messages/count_tokens`, and `/v1/models`
@@ -248,7 +326,7 @@ Delete the isolated configuration, projects, and session state as well:
 - **Extended Thinking** — Enable via the `[1m]` suffix, the `thinking` field, or `output_config.effort`. Reasoning depth travels natively as `additionalModelRequestFields.output_config.effort` (validated against each model's enum; defaults to `medium` for effort-capable models when thinking is on without an explicit effort)
 - **Tool Search** — Proxy-side implementation of Anthropic's [Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool). Supports `tool_search_tool_regex_20251119` and `tool_search_tool_bm25_20251119` with `defer_loading` for on-demand tool discovery
 - **Kiro-native WebSearch** — Executes Claude Code's `web_search_20250305` through Kiro MCP with paired Anthropic result blocks, streaming SSE, retry, token counting, and server-tool usage
-- **Isolated ClawGod profile** — Dedicated `claude-kiro` command, state, config, gateway binary, port, and update boundary; the official `claude` path is not modified
+- **Isolated runtime profile** — Dedicated `claude-kiro` command, state, config, gateway binary, port, and update boundary around official Claude Code by default, with ClawGod as an explicit opt-in; official `claude` is not modified
 - **Prompt Caching** — Converts Anthropic tool-level `cache_control` to Kiro `cachePoint`
 - **Truncation detection** — Automatically injects a notice into the next request when a response is truncated
 - **Retry** — Exponential backoff retry for 403 (token expiry), 429, and 5xx errors. Also retries thinking-only (empty visible) responses
@@ -260,8 +338,8 @@ Delete the isolated configuration, projects, and session state as well:
 
 ## Gateway-only installation
 
-Use this path when you want the Anthropic-compatible gateway without the
-isolated ClawGod profile. It requires Go 1.26+ and either a logged-in
+Use this path when you want only the Anthropic-compatible gateway without the
+managed `claude-kiro` profile. It requires Go 1.26+ and either a logged-in
 [Kiro CLI](https://kiro.dev) or a Kiro API key.
 
 ### Build the standalone gateway
@@ -288,15 +366,17 @@ claude-kiro
 
 The launcher sets the isolated `CLAUDE_CONFIG_DIR`, points
 `ANTHROPIC_BASE_URL` at the gateway, clears conflicting Anthropic/Bedrock/
-Vertex/Foundry provider variables, and forwards every argument to ClawGod.
+Vertex/Foundry provider variables, and forwards every argument to the selected
+runtime: official Claude Code by default or ClawGod when explicitly installed.
 
 Runtime overrides:
 
 | Variable | Purpose |
 | --- | --- |
 | `KIROCC_BIN` | Alternate patched gateway executable |
-| `CLAWGOD_BIN` | Alternate explicit ClawGod executable |
-| `CLAWGOD_KIROCC_CONFIG_DIR` | Alternate isolated Claude configuration directory |
+| `CLAUDE_KIRO_RUNTIME_BIN` | Alternate official or patched runtime executable |
+| `CLAWGOD_BIN` | Compatibility alias for an alternate ClawGod executable |
+| `CLAUDE_KIRO_CONFIG_DIR` / `CLAWGOD_KIROCC_CONFIG_DIR` | Alternate isolated Claude configuration directory |
 | `KIROCC_PORT` | Port used when the launcher starts its own gateway |
 | `KIROCC_URL` | Reuse an existing gateway URL instead of the default `http://127.0.0.1:$KIROCC_PORT` |
 | `KIROCC_API_KEY` | Protect the gateway and use the same value as Claude's local proxy token |
@@ -360,6 +440,7 @@ not a Kiro credential.
 | ----- | ----------------------------------------------------- |
 | macOS | `~/Library/Application Support/kiro-cli/data.sqlite3` |
 | Linux | `~/.local/share/kiro-cli/data.sqlite3`                |
+| Windows | `%USERPROFILE%\.local\share\kiro-cli\data.sqlite3`; the launcher also probes `%LOCALAPPDATA%` and `%APPDATA%` |
 
 ### Environment variables
 
@@ -609,9 +690,9 @@ Note: `[1m]` has different meanings on request vs. response. On the **request** 
 
 ## Known limitations
 
-- The complete isolated ClawGod installer targets macOS and Linux. A standalone
-  Go gateway build on another OS is not evidence that the full profile is
-  supported there.
+- Native Windows support targets Windows 11 x64. PowerShell syntax, Windows Go
+  tests, and PE builds run in CI, but a credentialed clean-install E2E on
+  Windows remains environment-dependent.
 - A hand-written request that mixes native WebSearch with client tools returns
   HTTP 400.
 - `count_tokens` is approximate and does not use Claude's official tokenizer.
@@ -627,15 +708,15 @@ Note: `[1m]` has different meanings on request vs. response. On the **request** 
 
 | Symptom | Check or fix |
 | --- | --- |
-| `claude-kiro: command not found` | Add `~/.local/bin` to `PATH`, then rerun `command -v claude-kiro` |
-| Installer reports a missing prerequisite | Install the named command; the complete profile requires `go`, `curl`, `node`, `bun`, and `rg` |
+| `claude-kiro: command not found` | Add the per-user `.local/bin` directory to `PATH`; on Windows open a new terminal after installation |
+| Installer reports a missing prerequisite | Default mode needs Go/Node (plus curl on macOS/Linux); Bun, ripgrep, and SHA-256 tooling are required only with ClawGod |
 | `official Claude Code command not found` | Install official Claude Code and confirm `command -v claude` before rerunning the installer |
 | Gateway fails to start | Read `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`; choose another port with `KIROCC_PORT=3458` if needed |
 | Kiro returns 401/403 | Log in again with Kiro CLI, or verify `KIRO_API_KEY` and `KIRO_API_REGION`; do not substitute `KIROCC_API_KEY` |
 | WebSearch still reports the old schema 502 | Confirm `command -v claude-kiro`, rerun `./scripts/install.sh`, and verify the gateway binary is `kirocc-native-websearch` |
 | Native WebSearch returns HTTP 400 | Do not combine `web_search_20250305` with client tools in one hand-written request |
-| `claude-kiro update` is blocked | Expected; use `git pull --ff-only` followed by `./scripts/install.sh --refresh-clawgod` |
-| Patched UI is not green | Confirm you launched `claude-kiro`, not official `claude`; refresh the isolated runtime if the path is correct |
+| `claude-kiro update` is blocked | Expected; pull the repository and rerun the installer, adding the refresh option only for ClawGod mode |
+| UI is not green | Expected in the default official-runtime mode; green branding requires `--with-clawgod` / `-WithClawGod` |
 | Skills, MCPs, or history appear missing | Expected isolation: selectively copy or recreate only the configuration you want under `~/.clawgod-kirocc/claude-config`; do not symlink the entire official profile |
 
 ## Security and data handling
@@ -664,10 +745,13 @@ GOEXPERIMENT=jsonv2 go vet ./...
 bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh
 ./scripts/doctor.sh --help >/dev/null
 python3 -m json.tool config/settings.json >/dev/null
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -o /tmp/kirocc.exe ./cmd/kirocc
 ```
 
 `make test` runs `go test -race ./...`. CI repeats formatting/fix checks,
-integration-file validation, golangci-lint, and the race test suite.
+integration-file validation, golangci-lint, and the race test suite on Linux;
+a native Windows job parses every PowerShell script, runs Go tests, and builds
+the Windows gateway.
 
 Verified snapshot on macOS arm64 (2026-08-03):
 

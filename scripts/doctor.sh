@@ -12,6 +12,17 @@ else
   gateway_url_label="$gateway_url"
 fi
 strict=false
+runtime_kind=""
+if [[ -f "$install_root/install-mode" ]]; then
+  runtime_kind="$(tr -d '[:space:]' < "$install_root/install-mode")"
+elif [[ -x "$install_root/clawgod/bin/clawgod" ]]; then
+  runtime_kind="clawgod"
+else
+  runtime_kind="official"
+fi
+if [[ "$runtime_kind" != "official" && "$runtime_kind" != "clawgod" ]]; then
+  runtime_kind="unknown"
+fi
 
 usage() {
   cat <<'USAGE'
@@ -79,15 +90,22 @@ check_file() {
 printf 'ClawGod KiroCC doctor (read-only)\n'
 printf '  install root: %s\n' "$install_root"
 printf '  state root:   %s\n' "$state_root"
+printf '  runtime:      %s\n' "$runtime_kind"
 printf '  gateway URL:  %s\n\n' "$gateway_url_label"
 
-for required_command in go curl node bun rg; do
+required_commands=(go curl node)
+if [[ "$runtime_kind" == "clawgod" ]]; then
+  required_commands+=(bun rg)
+fi
+for required_command in "${required_commands[@]}"; do
   check_command "$required_command"
 done
-if command -v shasum >/dev/null 2>&1 || command -v sha256sum >/dev/null 2>&1; then
-  pass 'SHA-256 command available'
-else
-  fail 'missing SHA-256 command: install shasum or sha256sum'
+if [[ "$runtime_kind" == "clawgod" ]]; then
+  if command -v shasum >/dev/null 2>&1 || command -v sha256sum >/dev/null 2>&1; then
+    pass 'SHA-256 command available'
+  else
+    fail 'missing SHA-256 command: install shasum or sha256sum'
+  fi
 fi
 
 official_claude="$(command -v claude 2>/dev/null || true)"
@@ -115,9 +133,17 @@ if [[ -n "$official_claude" && -n "$isolated_launcher" ]]; then
 fi
 
 check_executable "$install_root/bin/kirocc-native-websearch"
-check_executable "$install_root/clawgod/bin/clawgod"
-check_executable "$install_root/clawgod/bin/claude.orig"
-check_file "$state_root/cli.cjs"
+if [[ "$runtime_kind" == "clawgod" ]]; then
+  check_executable "$install_root/clawgod/bin/clawgod"
+  check_executable "$install_root/clawgod/bin/claude.orig"
+  check_file "$state_root/cli.cjs"
+elif [[ "$runtime_kind" == "official" ]]; then
+  if [[ -n "$official_claude" ]]; then
+    pass 'official Claude runtime selected'
+  fi
+else
+  fail 'install mode is neither official nor clawgod'
+fi
 check_file "$state_root/claude-config/settings.json"
 check_file "$state_root/claude-config/CLAUDE.md"
 

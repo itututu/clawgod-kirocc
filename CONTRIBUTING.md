@@ -28,11 +28,16 @@ GOEXPERIMENT=jsonv2 go vet ./...
 bash -n scripts/install.sh scripts/uninstall.sh scripts/doctor.sh
 ./scripts/doctor.sh --help >/dev/null
 python3 -m json.tool config/settings.json >/dev/null
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -o /tmp/kirocc.exe ./cmd/kirocc
 ```
 
 `make test` runs the Go test suite with the race detector. Tests that contact a
 live Kiro account must be opt-in, redact credentials, and state what remote
 behavior they actually proved.
+
+Windows changes must also parse under PowerShell 5.1+ and pass the native
+`windows-latest` CI job. The default installer path must work without Bun,
+ripgrep, or ClawGod; those dependencies belong only to opt-in ClawGod mode.
 
 ## Pull requests
 
