@@ -11,6 +11,17 @@ pre-release tags based on the upstream kirocc version.
 - The public repository and current project branding are now `claudecode-kiro`
   / ClaudeCode Kiro. Existing release tags, artifact names, commands, and local
   installation paths remain unchanged for compatibility.
+- Managed launchers now default Kiro runtime and MCP traffic to `us-east-1`;
+  `KIRO_API_REGION=eu-central-1` remains an explicit override.
+
+### Fixed
+
+- `KIRO_API_REGION` now overrides runtime and MCP endpoint routing for Kiro CLI
+  database credentials as well as API-key auth, while credential refresh keeps
+  using the original login region. This prevents 502s when the login region has
+  no Kiro inference host.
+- Kiro-style always-1M aliases such as `claude-opus-4.8[1m]` and `[1M]` now
+  resolve exactly without accidentally enabling thinking.
 
 ## [v0.6.0-clawgod.2] - 2026-08-03
 

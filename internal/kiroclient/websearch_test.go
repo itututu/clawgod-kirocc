@@ -74,6 +74,17 @@ func TestHTTPClient_SearchWebContract(t *testing.T) {
 	}
 }
 
+func TestHTTPClient_MCPEndpointUsesRegionOverride(t *testing.T) {
+	c := NewHTTPClient(WithRegion("us-east-1"))
+	got, err := c.mcpEndpointURL("ap-southeast-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "https://q.us-east-1.amazonaws.com/mcp"; got != want {
+		t.Fatalf("mcpEndpointURL = %q, want %q", got, want)
+	}
+}
+
 func TestHTTPClient_SearchWebRefreshes403(t *testing.T) {
 	var calls atomic.Int32
 	srv := newTCP4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

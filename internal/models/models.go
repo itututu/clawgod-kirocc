@@ -117,6 +117,11 @@ func effectiveMappings() []Mapping {
 // Upstream `kiroModel` is never `[1m]`-suffixed — it always comes from
 // mapping tables. KIROCC_MODEL_MAPPINGS env var can override mappings.
 func Resolve(model string, context1M bool) (kiroModel string, thinking bool, contextWindowSize int, anthropicModel string) {
+	// Claude Code and Kiro examples use both [1m] and [1M]. Keep model aliases
+	// case-stable while normalizing only the recognized context suffix.
+	if before, ok := strings.CutSuffix(model, "[1M]"); ok {
+		model = before + ThinkingSuffix
+	}
 	var matchedWindowSize int
 	var matchedKiro1M string
 	var matchedAnthropic string
@@ -125,7 +130,11 @@ func Resolve(model string, context1M bool) (kiroModel string, thinking bool, con
 	// Tier 1: exact match (no strip). Handles `claude-opus-4-7[1m]` etc.
 	mappings := effectiveMappings()
 	for _, m := range mappings {
-		if model == m.Anthropic || model == m.Kiro {
+		// Always-1M Kiro SKUs have no separate suffixed upstream ID. Accept the
+		// Kiro-style dotted spelling with [1m] as an exact context alias, not as
+		// a thinking opt-in (for example claude-opus-4.8[1m]).
+		kiroContextAlias := m.Kiro1M == m.Kiro && model == m.Kiro+ThinkingSuffix
+		if model == m.Anthropic || model == m.Kiro || kiroContextAlias {
 			kiroModel = m.Kiro
 			matchedKiro1M = m.Kiro1M
 			matchedWindowSize = m.ContextWindowSize

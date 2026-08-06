@@ -2,6 +2,7 @@ package config
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -195,6 +196,20 @@ func TestApplyEnvOverrides_LogFields(t *testing.T) {
 	}
 }
 
+func TestApplyEnvOverrides_KiroAPIRegion(t *testing.T) {
+	t.Setenv("KIRO_API_REGION", "eu-central-1")
+	cfg := Config{Host: "127.0.0.1", Port: 3456}
+	if err := ApplyEnvOverrides(&cfg); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.KiroAPIRegion != "eu-central-1" {
+		t.Fatalf("KiroAPIRegion = %q", cfg.KiroAPIRegion)
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+}
+
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -211,6 +226,12 @@ func TestConfig_Validate(t *testing.T) {
 		{"keep-alive minimum", Config{Host: "127.0.0.1", Port: 3456, KeepAliveInterval: time.Second}, false},
 		{"keep-alive negative", Config{Host: "127.0.0.1", Port: 3456, KeepAliveInterval: -time.Second}, true},
 		{"keep-alive too small", Config{Host: "127.0.0.1", Port: 3456, KeepAliveInterval: 500 * time.Millisecond}, true},
+		{"region us-east-1", Config{Host: "127.0.0.1", Port: 3456, KiroAPIRegion: "us-east-1"}, false},
+		{"region eu-central-1", Config{Host: "127.0.0.1", Port: 3456, KiroAPIRegion: "eu-central-1"}, false},
+		{"region uppercase", Config{Host: "127.0.0.1", Port: 3456, KiroAPIRegion: "US-EAST-1"}, true},
+		{"region host injection", Config{Host: "127.0.0.1", Port: 3456, KiroAPIRegion: "x.evil.example"}, true},
+		{"region path injection", Config{Host: "127.0.0.1", Port: 3456, KiroAPIRegion: "us-east-1/evil"}, true},
+		{"region too long", Config{Host: "127.0.0.1", Port: 3456, KiroAPIRegion: strings.Repeat("a", maxRegionLen+1)}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

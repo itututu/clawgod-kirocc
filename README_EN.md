@@ -454,6 +454,7 @@ Runtime overrides:
 | `KIROCC_PORT` | Port used when the launcher starts its own gateway |
 | `KIROCC_URL` | Reuse an existing gateway URL instead of the default `http://127.0.0.1:$KIROCC_PORT` |
 | `KIROCC_API_KEY` | Protect the gateway and use the same value as Claude's local proxy token |
+| `KIRO_API_REGION` | Pin Kiro runtime/MCP routing; managed default `us-east-1`, optional `eu-central-1` |
 
 ### Start the standalone gateway
 
@@ -480,9 +481,17 @@ The gateway supports two mutually exclusive upstream credential sources:
 1. **Kiro CLI database (default):** reads the OS-specific SQLite database and
    refreshes Social/OIDC credentials automatically.
 2. **Kiro API key:** set `KIRO_API_KEY=ksk_...` and optionally
-   `KIRO_API_REGION` (default `us-east-1`), or pass `-kiro-api-key` and
+   `KIRO_API_REGION`, or pass `-kiro-api-key` and
    `-kiro-api-region`. This bypasses the local Kiro CLI database, not Kiro's
    server-side authorization or quota checks.
+
+`KIRO_API_REGION` is a routing override shared by both authentication modes.
+The region stored in Kiro CLI credentials can be only the sign-in region and
+may not expose a Kiro inference host. The managed `claude-kiro` launcher pins
+runtime and MCP traffic to `us-east-1` by default while token refresh keeps the
+credential's original region. European users may set
+`KIRO_API_REGION=eu-central-1`. A standalone gateway with no override continues
+to use the credential region.
 
 `KIROCC_API_KEY` is different: it protects access to the **local proxy**. It is
 not a Kiro credential.
@@ -510,7 +519,7 @@ spawn a `kiro-cli` child process.
 | `-db`              | (OS-dependent, see below) | Kiro CLI SQLite DB path                                            |
 | `-api-key`         | (none)                    | API key required to access the proxy                               |
 | `-kiro-api-key`    | (none)                    | Kiro `ksk_...` key instead of the Kiro CLI database credential     |
-| `-kiro-api-region` | `us-east-1`               | Region used with Kiro API-key authentication                       |
+| `-kiro-api-region` | (none)                    | Pin Kiro runtime/MCP region, overriding the credential region      |
 | `-debug`           | `false`                   | Enable debug logging                                               |
 | `-keepalive-interval` | `15s`                  | SSE idle keep-alive interval; `0` disables it                      |
 | `-log-file`        | (none)                    | Write logs to file with rotation (file-only by default)            |
@@ -803,6 +812,7 @@ Note: `[1m]` has different meanings on request vs. response. On the **request** 
 | `official Claude Code command not found` | Install official Claude Code and confirm `command -v claude` before rerunning the installer |
 | Gateway fails to start | Read `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`; choose another port with `KIROCC_PORT=3458` if needed |
 | `authentication failed` or Kiro returns 401/403 | This is an upstream Kiro credential problem: run `kiro-cli login`/`kiro-cli whoami` again, or verify `KIRO_API_KEY` and `KIRO_API_REGION` |
+| `/model` returns a bodyless 502 | Pull the latest source and rerun the installer; the launcher now defaults to `us-east-1`. If it persists, confirm `kiro-cli chat --list-models` includes the model, then try `$env:KIRO_API_REGION='eu-central-1'; claude-kiro` in PowerShell |
 | `invalid API key` / running gateway rejects `KIROCC_API_KEY` | This is a local proxy password or stale-port conflict, not Kiro login; use the matching `KIROCC_API_KEY` or start a new instance with `KIROCC_PORT=3458` |
 | WebSearch still reports the old schema 502 | Confirm `command -v claude-kiro`, rerun `./scripts/install.sh`, and verify the gateway binary is `kirocc-native-websearch` |
 | Native WebSearch returns HTTP 400 | Do not combine `web_search_20250305` with client tools in one hand-written request |

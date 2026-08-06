@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"time"
@@ -27,7 +28,9 @@ type Config struct {
 	// KiroAPIKey is a Kiro API key ("ksk_…") used upstream instead of the
 	// kiro-cli database credential. Named after Kiro's own KIRO_API_KEY rather
 	// than the KIROCC_* convention, since it is Kiro's credential, not kirocc's.
-	KiroAPIKey        string
+	KiroAPIKey string
+	// KiroAPIRegion pins Kiro's runtime/MCP endpoint region without changing
+	// the credential's issuer region used for token refresh.
 	KiroAPIRegion     string
 	Debug             bool
 	OTel              bool
@@ -35,6 +38,10 @@ type Config struct {
 	KeepAliveInterval time.Duration
 	LogFile           logging.LogFileConfig
 }
+
+var regionPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+const maxRegionLen = 64
 
 // DefaultDBPath returns the default kiro-cli SQLite database location.
 func DefaultDBPath() string {
@@ -118,6 +125,9 @@ func (c *Config) Validate() error {
 	}
 	if c.KeepAliveInterval != 0 && c.KeepAliveInterval < time.Second {
 		return fmt.Errorf("keepalive-interval must be 0 or >= 1s, got %s", c.KeepAliveInterval)
+	}
+	if c.KiroAPIRegion != "" && (len(c.KiroAPIRegion) > maxRegionLen || !regionPattern.MatchString(c.KiroAPIRegion)) {
+		return fmt.Errorf("kiro-api-region must be a lowercase region like us-east-1, got %q", c.KiroAPIRegion)
 	}
 	return nil
 }

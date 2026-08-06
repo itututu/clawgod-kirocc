@@ -71,6 +71,13 @@ $gatewayUrl = if ($env:KIROCC_URL) {
 }
 $proxyToken = if ($env:KIROCC_API_KEY) { $env:KIROCC_API_KEY } else { "dummy" }
 
+# The region stored by kiro-cli is the login region, but Kiro inference is not
+# served in every AWS region. Pin managed gateway traffic to a known runtime by
+# default. Users closer to Europe can override this before launching.
+if (-not $env:KIRO_API_REGION) {
+    $env:KIRO_API_REGION = "us-east-1"
+}
+
 if ($args.Count -gt 0 -and $args[0] -eq "update") {
     Write-Error "claude-kiro: updates are disabled in the isolated profile; rerun the project installer"
     exit 2
@@ -139,6 +146,7 @@ Install/login Kiro CLI:
   kiro-cli whoami
 
 Or set KIRO_API_KEY (and optionally KIRO_API_REGION) before launching.
+Managed default: KIRO_API_REGION=us-east-1 (eu-central-1 is also supported).
 Expected database: $expectedDatabase
 "@
     exit 78

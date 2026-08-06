@@ -457,6 +457,7 @@ claude-kiro
 | `KIROCC_PORT` | 启动器自行启动网关时使用的端口 |
 | `KIROCC_URL` | 复用已有网关 URL，替代默认 `http://127.0.0.1:$KIROCC_PORT` |
 | `KIROCC_API_KEY` | 保护本地网关，并作为 Claude 访问本地代理的 Token |
+| `KIRO_API_REGION` | 固定 Kiro 推理/MCP 区域；启动器默认 `us-east-1`，可改为 `eu-central-1` |
 
 ### 单独启动网关
 
@@ -483,9 +484,15 @@ kirocc 的上游凭据来自 Kiro CLI 数据库或 `KIRO_API_KEY`。
 1. **Kiro CLI 数据库（默认）**：读取系统对应的 SQLite 数据库并自动刷新
    Social/OIDC 凭据。
 2. **Kiro API Key**：设置 `KIRO_API_KEY=ksk_...`，可选
-   `KIRO_API_REGION`（默认 `us-east-1`）；也可使用 `-kiro-api-key` 和
+   `KIRO_API_REGION`；也可使用 `-kiro-api-key` 和
    `-kiro-api-region`。这只是不读取本地 Kiro CLI 数据库，并不绕过 Kiro
    服务端鉴权或额度。
+
+`KIRO_API_REGION` 是两种认证模式共用的网络路由覆盖项。Kiro CLI 数据库中的
+Region 可能只是登录区域，并不一定存在 Kiro 推理服务；受管理的
+`claude-kiro` 启动器因此默认把推理和 MCP 固定到 `us-east-1`，但 Token
+刷新仍使用凭据原始区域。欧洲用户可以在启动前设置
+`KIRO_API_REGION=eu-central-1`。单独运行网关且未设置该变量时，仍沿用凭据区域。
 
 `KIROCC_API_KEY` 是本地代理访问密码，不是 Kiro 凭据。
 
@@ -511,7 +518,7 @@ Kiro MCP，并非启动 `kiro-cli` 子进程。
 | `-db` | 见下表 | Kiro CLI SQLite 数据库路径 |
 | `-api-key` | 空 | 访问本地代理所需的 API Key |
 | `-kiro-api-key` | 空 | 替代 Kiro CLI 数据库的 `ksk_...` Key |
-| `-kiro-api-region` | `us-east-1` | Kiro API Key 所用 Region |
+| `-kiro-api-region` | 空 | 固定 Kiro 推理/MCP Region；覆盖凭据中的登录区域 |
 | `-debug` | `false` | 启用 Debug 日志 |
 | `-keepalive-interval` | `15s` | SSE 空闲心跳间隔；`0` 表示关闭 |
 | `-log-file` | 空 | 写入带轮转的日志文件 |
@@ -754,6 +761,7 @@ Kiro 推理后端不原生支持 Anthropic Tool Search，因此由网关实现�
 | 找不到官方 Claude Code | 先确认 `command -v claude` 有结果，再重新安装 |
 | 网关启动失败 | 查看 `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`；端口冲突时使用 `KIROCC_PORT=3458` |
 | `authentication failed` 或 Kiro 返回 401/403 | 这是上游 Kiro 凭据问题：重新执行 `kiro-cli login`/`kiro-cli whoami`，或检查 `KIRO_API_KEY`/`KIRO_API_REGION` |
+| `/model` 后返回无正文 502 | 拉取最新版并重跑安装器；启动器会默认使用 `us-east-1`。仍失败时先确认 `kiro-cli chat --list-models` 包含目标模型，再尝试 `$env:KIRO_API_REGION='eu-central-1'; claude-kiro`（PowerShell） |
 | `invalid API key` / 已运行网关拒绝 `KIROCC_API_KEY` | 这是本地代理密码或旧网关端口冲突，不是 Kiro 登录；使用匹配的 `KIROCC_API_KEY`，或以 `KIROCC_PORT=3458` 启动新实例 |
 | WebSearch 仍出现旧的 Schema 502 | 确认启动的是 `claude-kiro`，重跑安装器，并确认网关文件为 `kirocc-native-websearch` |
 | 原生 WebSearch 返回 HTTP 400 | 不要在手工请求中把 `web_search_20250305` 与客户端 Tool 混合 |

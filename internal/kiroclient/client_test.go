@@ -310,13 +310,16 @@ func TestAmzSdkRequestHeader_ConsistentAcrossRetries(t *testing.T) {
 
 func TestHTTPClient_EndpointURL(t *testing.T) {
 	tests := []struct {
-		name    string
-		baseURL string
-		region  string
-		want    string
+		name           string
+		baseURL        string
+		regionOverride string
+		region         string
+		want           string
 	}{
-		{"region-based", "", "us-west-2", "https://runtime.us-west-2.kiro.dev/"},
-		{"override", "http://localhost:8080", "us-west-2", "http://localhost:8080"},
+		{"region-based", "", "", "us-west-2", "https://runtime.us-west-2.kiro.dev/"},
+		{"base URL override", "http://localhost:8080", "", "us-west-2", "http://localhost:8080"},
+		{"region override wins", "", "us-east-1", "ap-southeast-1", "https://runtime.us-east-1.kiro.dev/"},
+		{"base URL wins over region", "http://localhost:8080", "eu-central-1", "us-west-2", "http://localhost:8080"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -324,9 +327,32 @@ func TestHTTPClient_EndpointURL(t *testing.T) {
 			if tt.baseURL != "" {
 				opts = append(opts, WithBaseURL(tt.baseURL))
 			}
+			if tt.regionOverride != "" {
+				opts = append(opts, WithRegion(tt.regionOverride))
+			}
 			c := NewHTTPClient(opts...)
 			if got := c.endpointURL(tt.region); got != tt.want {
 				t.Errorf("endpointURL(%q) = %q, want %q", tt.region, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHTTPClient_EffectiveRegion(t *testing.T) {
+	tests := []struct {
+		name           string
+		regionOverride string
+		region         string
+		want           string
+	}{
+		{"credential region passes through", "", "ap-southeast-1", "ap-southeast-1"},
+		{"override replaces credential region", "us-east-1", "ap-southeast-1", "us-east-1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := NewHTTPClient(WithRegion(tt.regionOverride))
+			if got := c.effectiveRegion(tt.region); got != tt.want {
+				t.Fatalf("effectiveRegion(%q) = %q, want %q", tt.region, got, tt.want)
 			}
 		})
 	}

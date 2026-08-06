@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/d-kuro/kirocc/internal/logging"
+	"github.com/google/uuid"
 )
 
 const maxMCPResponseBytes = 4 << 20
@@ -73,7 +73,7 @@ func (c *HTTPClient) mcpEndpointURL(region string) (string, error) {
 	if c.mcpURL != "" {
 		return c.mcpURL, nil
 	}
-	region = strings.TrimSpace(region)
+	region = strings.TrimSpace(c.effectiveRegion(region))
 	if region == "" {
 		return "", fmt.Errorf("kiro MCP: region is required")
 	}

@@ -14,6 +14,19 @@ func TestRun_HelpFlagReturnsNoError(t *testing.T) {
 	}
 }
 
+func TestParseFlags_KiroAPIRegion(t *testing.T) {
+	cfg, err := parseFlags([]string{"-kiro-api-region", "us-east-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.KiroAPIRegion != "us-east-1" {
+		t.Fatalf("KiroAPIRegion = %q", cfg.KiroAPIRegion)
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+}
+
 func TestParseFlags_KeepAliveInterval(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		cfg, err := parseFlags(nil)

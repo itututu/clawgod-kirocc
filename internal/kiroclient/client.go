@@ -81,6 +81,7 @@ type HTTPClient struct {
 	httpClient     *http.Client
 	baseURL        string // override for tests; empty = use region-based URL
 	mcpURL         string // override for tests; empty = use q.<region>.amazonaws.com/mcp
+	region         string // pins endpoint region; empty = use the credential region
 	otel           bool
 	otelBodyLimit  int
 	tokenRefresher TokenRefresher
@@ -95,6 +96,14 @@ type HTTPClientOption func(*HTTPClient)
 // WithBaseURL sets a custom base URL (for testing).
 func WithBaseURL(url string) HTTPClientOption {
 	return func(c *HTTPClient) { c.baseURL = url }
+}
+
+// WithRegion pins the region used to build Kiro runtime and MCP endpoints.
+// Kiro CLI credentials may contain the region where the user signed in, which
+// is not necessarily a region where Kiro exposes an inference endpoint. The
+// credential region remains untouched so token refresh still uses its issuer.
+func WithRegion(region string) HTTPClientOption {
+	return func(c *HTTPClient) { c.region = region }
 }
 
 // WithMCPURL sets a custom Kiro MCP endpoint. It is intended for tests and
@@ -180,11 +189,18 @@ func (c *HTTPClient) recordError(ctx context.Context, err error) {
 	}
 }
 
+func (c *HTTPClient) effectiveRegion(region string) string {
+	if c.region != "" {
+		return c.region
+	}
+	return region
+}
+
 func (c *HTTPClient) endpointURL(region string) string {
 	if c.baseURL != "" {
 		return c.baseURL
 	}
-	return fmt.Sprintf("https://runtime.%s.kiro.dev/", region)
+	return fmt.Sprintf("https://runtime.%s.kiro.dev/", c.effectiveRegion(region))
 }
 
 // GenerateAssistantResponse sends a request to the Kiro API with retry logic.
@@ -196,7 +212,7 @@ func (c *HTTPClient) GenerateAssistantResponse(ctx context.Context, token string
 		ctx, span = tracing.Tracer().Start(ctx, "kiro.GenerateAssistantResponse")
 		defer span.End()
 		span.SetAttributes(
-			attribute.String("kiro.region", region),
+			attribute.String("kiro.region", c.effectiveRegion(region)),
 			attribute.String("kiro.endpoint", endpoint),
 		)
 	}

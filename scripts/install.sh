@@ -297,6 +297,7 @@ config_dir="\${CLAUDE_KIRO_CONFIG_DIR:-\${CLAWGOD_KIROCC_CONFIG_DIR:-$state_root
 gateway_port="\${KIROCC_PORT:-$gateway_port}"
 gateway_url="\${KIROCC_URL:-http://127.0.0.1:\${gateway_port}}"
 proxy_token="\${KIROCC_API_KEY:-dummy}"
+export KIRO_API_REGION="\${KIRO_API_REGION:-us-east-1}"
 log_file="\${TMPDIR:-/tmp}/clawgod-kirocc-gateway-\${UID}-\${gateway_port}.log"
 started_pid=""
 
@@ -347,6 +348,7 @@ Install/login Kiro CLI:
   kiro-cli whoami
 
 Or export KIRO_API_KEY (and optionally KIRO_API_REGION) before launching.
+Managed default: KIRO_API_REGION=us-east-1 (eu-central-1 is also supported).
 Expected database: \${database_path:-<no default for this OS>}
 EOF
   exit 78
