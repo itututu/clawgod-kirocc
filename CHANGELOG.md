@@ -25,6 +25,10 @@ pre-release tags based on the upstream kirocc version.
 - Claude Code's new default `claude-opus-5[1m]` model now maps explicitly to
   Kiro's `claude-opus-5` SKU with the supported five-level effort enum; its
   context suffix no longer falls through the legacy thinking path.
+- Managed launchers now preserve HTTP(S) proxy variables in the gateway process
+  but remove them from the Claude Code child when `KIROCC_URL` is loopback. This
+  prevents a system proxy from intercepting `127.0.0.1` and producing a 502 with
+  no corresponding gateway request. Set `CLAUDE_KIRO_PRESERVE_PROXY=1` to opt out.
 
 ## [v0.6.0-clawgod.2] - 2026-08-03
 

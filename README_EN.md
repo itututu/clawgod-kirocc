@@ -455,6 +455,7 @@ Runtime overrides:
 | `KIROCC_URL` | Reuse an existing gateway URL instead of the default `http://127.0.0.1:$KIROCC_PORT` |
 | `KIROCC_API_KEY` | Protect the gateway and use the same value as Claude's local proxy token |
 | `KIRO_API_REGION` | Pin Kiro runtime/MCP routing; managed default `us-east-1`, optional `eu-central-1` |
+| `CLAUDE_KIRO_PRESERVE_PROXY=1` | Keep HTTP(S) proxy variables in the Claude Code child; use only when `KIROCC_URL` is not a local gateway |
 
 ### Start the standalone gateway
 
@@ -815,6 +816,7 @@ Note: `[1m]` has different meanings on request vs. response. On the **request** 
 | Gateway fails to start | Read `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`; choose another port with `KIROCC_PORT=3458` if needed |
 | `authentication failed` or Kiro returns 401/403 | This is an upstream Kiro credential problem: run `kiro-cli login`/`kiro-cli whoami` again, or verify `KIRO_API_KEY` and `KIRO_API_REGION` |
 | `/model` returns a bodyless 502 | Pull the latest source and rerun the installer; the launcher now defaults to `us-east-1`. If it persists, confirm `kiro-cli chat --list-models` includes the model, then try `$env:KIRO_API_REGION='eu-central-1'; claude-kiro` in PowerShell |
+| A manual local-gateway request works, but Claude Code hangs/returns 502 and the gateway logs no POST | `HTTP_PROXY`/`HTTPS_PROXY` may be intercepting loopback traffic. The current launcher preserves proxy variables for the gateway's Kiro connection but removes them only from the Claude Code child; pull and rerun the installer |
 | `invalid API key` / running gateway rejects `KIROCC_API_KEY` | This is a local proxy password or stale-port conflict, not Kiro login; use the matching `KIROCC_API_KEY` or start a new instance with `KIROCC_PORT=3458` |
 | WebSearch still reports the old schema 502 | Confirm `command -v claude-kiro`, rerun `./scripts/install.sh`, and verify the gateway binary is `kirocc-native-websearch` |
 | Native WebSearch returns HTTP 400 | Do not combine `web_search_20250305` with client tools in one hand-written request |

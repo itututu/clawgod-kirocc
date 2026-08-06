@@ -97,7 +97,7 @@ jobs:
           $installRoot = Join-Path $smokeRoot "install\clawgod-kirocc"
           $stateRoot = Join-Path $smokeRoot "state\.clawgod-kirocc"
           New-Item -ItemType Directory -Force -Path $fakeBin | Out-Null
-          Set-Content -Path (Join-Path $fakeBin "claude.cmd") -Encoding ASCII -Value "@echo off`r`nexit /b 0"
+          Set-Content -Path (Join-Path $fakeBin "claude.cmd") -Encoding ASCII -Value "@echo off`r`nif defined HTTP_PROXY exit /b 41`r`nif defined HTTPS_PROXY exit /b 42`r`nexit /b 0"
           $env:PATH = "$fakeBin;$env:PATH"
           $env:CLAWGOD_KIROCC_INSTALL_ROOT = $installRoot
           $env:CLAWGOD_KIROCC_STATE_ROOT = $stateRoot
@@ -112,6 +112,8 @@ jobs:
           Remove-Item Env:KIROCC_DB_PATH
           $env:KIRO_API_KEY = "ksk_ci_placeholder"
           $env:KIRO_API_REGION = "us-east-1"
+          $env:HTTP_PROXY = "http://proxy.invalid:8080"
+          $env:HTTPS_PROXY = "http://proxy.invalid:8080"
           & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
           if ($LASTEXITCODE -ne 0) { throw "Windows PowerShell installer failed" }
           $env:PATH = "$userBin;$env:PATH"

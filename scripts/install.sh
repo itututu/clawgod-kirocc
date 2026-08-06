@@ -315,7 +315,7 @@ if [[ "\${1:-}" == "update" ]]; then
 fi
 
 gateway_accepts_token() {
-  curl -fsS --max-time 2 \
+  curl -fsS --noproxy '*' --max-time 2 \
     -H "Authorization: Bearer \$proxy_token" \
     "\$gateway_url/v1/models" >/dev/null 2>&1
 }
@@ -355,7 +355,7 @@ EOF
 }
 
 gateway_is_healthy=false
-if curl -fsS --max-time 1 "\$gateway_url/health" >/dev/null 2>&1; then
+if curl -fsS --noproxy '*' --max-time 1 "\$gateway_url/health" >/dev/null 2>&1; then
   gateway_is_healthy=true
   if ! gateway_accepts_token; then
     echo "claude-kiro: a gateway is already running at \$gateway_url but rejects the current KIROCC_API_KEY" >&2
@@ -370,7 +370,7 @@ if [[ "\$gateway_is_healthy" != true ]]; then
   started_pid=\$!
   ready=false
   for _attempt in {1..50}; do
-    if curl -fsS --max-time 1 "\$gateway_url/health" >/dev/null 2>&1; then
+    if curl -fsS --noproxy '*' --max-time 1 "\$gateway_url/health" >/dev/null 2>&1; then
       ready=true
       break
     fi
@@ -388,8 +388,25 @@ if [[ "\$gateway_is_healthy" != true ]]; then
   fi
 fi
 
+runtime_proxy_args=()
+if [[ "\${CLAUDE_KIRO_PRESERVE_PROXY:-0}" != 1 ]]; then
+  case "\$gateway_url" in
+    http://127.0.0.1:*|https://127.0.0.1:*|http://localhost:*|https://localhost:*|http://\[::1\]:*|https://\[::1\]:*)
+      # The gateway already inherited proxy variables for its Kiro requests.
+      # Remove them only from Claude Code so its loopback API calls cannot be
+      # sent through a proxy that does not honor NO_PROXY.
+      runtime_proxy_args=(
+        -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY
+        -u http_proxy -u https_proxy -u all_proxy
+      )
+      ;;
+  esac
+fi
+
 /usr/bin/env \
+  "\${runtime_proxy_args[@]}" \
   -u ANTHROPIC_API_KEY \
+  -u CLAUDE_CODE_OAUTH_TOKEN \
   -u CLAUDE_CODE_USE_BEDROCK \
   -u CLAUDE_CODE_USE_VERTEX \
   -u CLAUDE_CODE_USE_FOUNDRY \

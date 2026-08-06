@@ -458,6 +458,7 @@ claude-kiro
 | `KIROCC_URL` | 复用已有网关 URL，替代默认 `http://127.0.0.1:$KIROCC_PORT` |
 | `KIROCC_API_KEY` | 保护本地网关，并作为 Claude 访问本地代理的 Token |
 | `KIRO_API_REGION` | 固定 Kiro 推理/MCP 区域；启动器默认 `us-east-1`，可改为 `eu-central-1` |
+| `CLAUDE_KIRO_PRESERVE_PROXY=1` | 不清除 Claude Code 子进程的 HTTP(S) 代理变量；仅当 `KIROCC_URL` 不是本机网关时使用 |
 
 ### 单独启动网关
 
@@ -764,6 +765,7 @@ Kiro 推理后端不原生支持 Anthropic Tool Search，因此由网关实现�
 | 网关启动失败 | 查看 `${TMPDIR:-/tmp}/clawgod-kirocc-gateway-$UID-${KIROCC_PORT:-3457}.log`；端口冲突时使用 `KIROCC_PORT=3458` |
 | `authentication failed` 或 Kiro 返回 401/403 | 这是上游 Kiro 凭据问题：重新执行 `kiro-cli login`/`kiro-cli whoami`，或检查 `KIRO_API_KEY`/`KIRO_API_REGION` |
 | `/model` 后返回无正文 502 | 拉取最新版并重跑安装器；启动器会默认使用 `us-east-1`。仍失败时先确认 `kiro-cli chat --list-models` 包含目标模型，再尝试 `$env:KIRO_API_REGION='eu-central-1'; claude-kiro`（PowerShell） |
+| 手工请求本地网关成功，但 Claude Code 502/卡住且网关没有 POST 日志 | Windows/macOS/Linux 的 `HTTP_PROXY`/`HTTPS_PROXY` 可能接管了 loopback 请求；最新版启动器会让网关保留代理访问 Kiro，同时只为 Claude Code 子进程清除代理变量。更新后重跑安装器 |
 | `invalid API key` / 已运行网关拒绝 `KIROCC_API_KEY` | 这是本地代理密码或旧网关端口冲突，不是 Kiro 登录；使用匹配的 `KIROCC_API_KEY`，或以 `KIROCC_PORT=3458` 启动新实例 |
 | WebSearch 仍出现旧的 Schema 502 | 确认启动的是 `claude-kiro`，重跑安装器，并确认网关文件为 `kirocc-native-websearch` |
 | 原生 WebSearch 返回 HTTP 400 | 不要在手工请求中把 `web_search_20250305` 与客户端 Tool 混合 |

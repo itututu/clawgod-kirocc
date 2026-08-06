@@ -69,6 +69,13 @@ $gatewayUrl = if ($env:KIROCC_URL) {
 } else {
     "http://127.0.0.1:$gatewayPort"
 }
+try {
+    $gatewayUri = [Uri]$gatewayUrl
+} catch {
+    Write-Error "claude-kiro: KIROCC_URL is not a valid URL: $gatewayUrl"
+    exit 2
+}
+$gatewayIsLoopback = $gatewayUri.IsLoopback
 $proxyToken = if ($env:KIROCC_API_KEY) { $env:KIROCC_API_KEY } else { "dummy" }
 
 # The region stored by kiro-cli is the login region, but Kiro inference is not
@@ -91,23 +98,38 @@ if (-not (Test-Path -LiteralPath $runtimeBin -PathType Leaf)) {
     exit 127
 }
 
-function Test-GatewayHealth {
+function Invoke-GatewayProbe([string]$Path, [bool]$WithAuthorization, [int]$TimeoutMilliseconds) {
     try {
-        $response = Invoke-WebRequest -Uri "$gatewayUrl/health" -UseBasicParsing -TimeoutSec 1
-        return $response.StatusCode -ge 200 -and $response.StatusCode -lt 300
+        $request = [System.Net.WebRequest]::Create("$gatewayUrl$Path")
+        $request.Method = "GET"
+        $request.Timeout = $TimeoutMilliseconds
+        $request.ReadWriteTimeout = $TimeoutMilliseconds
+        if ($gatewayIsLoopback) {
+            # Do not let Windows/user proxy settings intercept health checks to
+            # the managed loopback gateway.
+            $request.Proxy = $null
+        }
+        if ($WithAuthorization) {
+            $request.Headers.Add("Authorization", "Bearer $proxyToken")
+        }
+        $response = $request.GetResponse()
+        try {
+            $statusCode = [int]$response.StatusCode
+            return $statusCode -ge 200 -and $statusCode -lt 300
+        } finally {
+            $response.Close()
+        }
     } catch {
         return $false
     }
 }
 
+function Test-GatewayHealth {
+    return Invoke-GatewayProbe -Path "/health" -WithAuthorization $false -TimeoutMilliseconds 1000
+}
+
 function Test-GatewayAccess {
-    try {
-        $headers = @{ Authorization = "Bearer $proxyToken" }
-        $response = Invoke-WebRequest -Uri "$gatewayUrl/v1/models" -Headers $headers -UseBasicParsing -TimeoutSec 2
-        return $response.StatusCode -ge 200 -and $response.StatusCode -lt 300
-    } catch {
-        return $false
-    }
+    return Invoke-GatewayProbe -Path "/v1/models" -WithAuthorization $true -TimeoutMilliseconds 2000
 }
 
 function Set-LocalKiroCredentialSource {
@@ -198,14 +220,31 @@ try {
         }
     }
 
-    # This launcher runs in its own PowerShell process, so these environment
-    # changes are inherited only by ClawGod and its children.
-    foreach ($name in @(
+    # The gateway process was started above and already inherited the user's
+    # proxy variables for reaching Kiro. Claude Code itself must reach a local
+    # gateway directly: current Claude Code proxy handling does not reliably
+    # honor NO_PROXY for loopback URLs, which can send 127.0.0.1 through an
+    # HTTP proxy and surface a bodyless 502 without ever touching this gateway.
+    # This launcher has its own PowerShell process, so removing variables here
+    # does not alter the user's terminal environment.
+    $runtimeUnsetNames = @(
         "ANTHROPIC_API_KEY",
+        "CLAUDE_CODE_OAUTH_TOKEN",
         "CLAUDE_CODE_USE_BEDROCK",
         "CLAUDE_CODE_USE_VERTEX",
         "CLAUDE_CODE_USE_FOUNDRY"
-    )) {
+    )
+    if ($gatewayIsLoopback -and $env:CLAUDE_KIRO_PRESERVE_PROXY -ne "1") {
+        $runtimeUnsetNames += @(
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+            "http_proxy",
+            "https_proxy",
+            "all_proxy"
+        )
+    }
+    foreach ($name in ($runtimeUnsetNames | Select-Object -Unique)) {
         Remove-Item "Env:$name" -ErrorAction SilentlyContinue
     }
     $env:CLAWGOD_RUNTIME_STATE_ROOT = $stateRoot
