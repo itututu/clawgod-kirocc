@@ -22,6 +22,9 @@ pre-release tags based on the upstream kirocc version.
   no Kiro inference host.
 - Kiro-style always-1M aliases such as `claude-opus-4.8[1m]` and `[1M]` now
   resolve exactly without accidentally enabling thinking.
+- Claude Code's new default `claude-opus-5[1m]` model now maps explicitly to
+  Kiro's `claude-opus-5` SKU with the supported five-level effort enum; its
+  context suffix no longer falls through the legacy thinking path.
 
 ## [v0.6.0-clawgod.2] - 2026-08-03
 
